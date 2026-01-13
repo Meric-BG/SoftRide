@@ -3,53 +3,45 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { DollarSign, Users, ShoppingBag, Activity, TrendingUp, TrendingDown } from 'lucide-react';
-import clsx from 'clsx';
-// No Recharts for now to keep it simple and ensure no build errors, will use custom CSS bars
-// If user really wants recharts I can add it, but CSS bars look cleaner for this specific "dark/minimalist" requirement
-// actually I installed recharts, so I can use it if I want, but I'll stick to the CSS implementation I refined earlier, adapted for the new dark theme.
 
 export default function AdminDashboard() {
   return (
-    <div className="max-w-7xl mx-auto">
-      <header className="flex justify-between items-end mb-10">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Vue d'ensemble</h1>
-          <p className="text-secondary">Métriques clés de performance en temps réel.</p>
-        </div>
-        <div className="px-4 py-2 bg-accent/20 rounded-md text-sm font-semibold text-accent border border-accent/30">
-          Semaine en cours
-        </div>
+    <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+      {/* Header */}
+      <header style={{ marginBottom: '40px' }}>
+        <h1 style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '8px' }}>Vue d'ensemble</h1>
+        <p style={{ color: 'var(--text-secondary)' }}>Métriques clés de performance en temps réel.</p>
       </header>
 
       {/* KPI Cards Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '24px', marginBottom: '40px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px', marginBottom: '40px' }}>
         <StatCard
           title="Revenu Total"
           value="32.5M FCFA"
           trend="+12.5%"
           isUp={true}
-          icon={<DollarSign size={20} className="text-success" />}
+          icon={<DollarSign size={24} style={{ color: 'var(--accent-primary)' }} />}
         />
         <StatCard
           title="Flotte Active"
           value="1,248"
           trend="+8.2%"
           isUp={true}
-          icon={<Activity size={20} className="text-blue-400" />}
+          icon={<Activity size={24} style={{ color: '#3B82F6' }} />}
         />
         <StatCard
           title="Ventes Store"
           value="4.2M FCFA"
           trend="+24.3%"
           isUp={true}
-          icon={<ShoppingBag size={20} className="text-warning" />}
+          icon={<ShoppingBag size={24} style={{ color: '#FBBF24' }} />}
         />
         <StatCard
           title="Abonnements (MRR)"
           value="1.8M FCFA"
           trend="-2.1%"
           isUp={false}
-          icon={<Users size={20} className="text-purple-400" />}
+          icon={<Users size={24} style={{ color: '#A855F7' }} />}
         />
       </div>
 
@@ -57,20 +49,20 @@ export default function AdminDashboard() {
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px' }}>
 
         {/* Revenue Chart */}
-        <div className="glass-panel p-6 rounded-xl min-h-[400px]">
-          <h3 className="text-lg font-semibold mb-6">Revenus par fonctionnalité</h3>
+        <div className="glass-panel" style={{ padding: '32px', borderRadius: 'var(--radius-md)' }}>
+          <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '32px' }}>Revenus par fonctionnalité</h3>
           <div style={{ display: 'flex', alignItems: 'flex-end', height: '300px', gap: '32px', paddingBottom: '20px' }}>
-            <Bar height="60%" label="Sentinelle" color="var(--success)" />
-            <Bar height="85%" label="Boost" color="var(--warning)" />
+            <Bar height="60%" label="Sentinelle" color="var(--accent-primary)" />
+            <Bar height="85%" label="Boost" color="#FBBF24" />
             <Bar height="40%" label="Premium" color="#3B82F6" />
             <Bar height="30%" label="Data" color="#A855F7" />
           </div>
         </div>
 
         {/* Top Features List */}
-        <div className="glass-panel p-6 rounded-xl">
-          <h3 className="text-lg font-semibold mb-6">Top Ventes</h3>
-          <div className="flex flex-col gap-4">
+        <div className="glass-panel" style={{ padding: '32px', borderRadius: 'var(--radius-md)' }}>
+          <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '24px' }}>Top Ventes</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <TopItem name="Boost Accélération" count="142 ventes" price="1.5M" />
             <TopItem name="Mode Sentinelle" count="89 abonnés" price="5k/mois" />
             <TopItem name="Connectivité" count="312 abonnés" price="2.5k/mois" />
@@ -88,17 +80,20 @@ export default function AdminDashboard() {
 const StatCard = ({ title, value, trend, isUp, icon }: any) => (
   <motion.div
     whileHover={{ y: -5 }}
-    className="glass-panel p-6 rounded-xl relative overflow-hidden"
+    className="glass-panel"
+    style={{ padding: '24px', borderRadius: 'var(--radius-md)', position: 'relative' }}
   >
-    <div className="flex justify-between items-start mb-4">
-      <span className="text-sm font-medium text-secondary">{title}</span>
-      <div className="p-2 rounded-lg bg-white/5">{icon}</div>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px' }}>
+      <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-secondary)' }}>{title}</span>
+      <div style={{ padding: '8px', borderRadius: 'var(--radius-sm)', background: 'rgba(255,255,255,0.05)' }}>
+        {icon}
+      </div>
     </div>
-    <div className="text-3xl font-bold text-primary mb-2">{value}</div>
-    <div className={`flex items-center gap-1 text-xs font-semibold ${isUp ? 'text-success' : 'text-error'}`}>
+    <div style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '8px' }}>{value}</div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 600, color: isUp ? '#10B981' : '#EF4444' }}>
       {isUp ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
       {trend}
-      <span className="text-secondary font-normal ml-1">vs mois dernier</span>
+      <span style={{ color: 'var(--text-secondary)', fontWeight: 400, marginLeft: '4px' }}>vs mois dernier</span>
     </div>
   </motion.div>
 );
@@ -109,18 +104,36 @@ const Bar = ({ height, label, color }: any) => (
       initial={{ height: 0 }}
       animate={{ height }}
       transition={{ duration: 1, ease: 'easeOut' }}
-      style={{ width: '48px', background: color, borderRadius: '8px 8px 0 0', opacity: 0.9, boxShadow: `0 0 20px ${color}40` }}
+      style={{
+        width: '100%',
+        maxWidth: '60px',
+        background: color,
+        borderRadius: '8px 8px 0 0',
+        opacity: 0.9
+      }}
     />
     <span style={{ marginTop: '16px', fontSize: '13px', color: 'var(--text-secondary)' }}>{label}</span>
   </div>
 );
 
 const TopItem = ({ name, count, price }: any) => (
-  <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg border border-white/5 hover:bg-white/10 transition-colors">
+  <div style={{
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '16px',
+    background: 'rgba(255,255,255,0.03)',
+    borderRadius: 'var(--radius-sm)',
+    border: '1px solid rgba(255,255,255,0.05)',
+    transition: 'background 0.2s'
+  }}
+    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+    onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+  >
     <div>
-      <div className="font-semibold text-sm mb-1">{name}</div>
-      <div className="text-xs text-secondary">{count}</div>
+      <div style={{ fontWeight: 600, fontSize: '14px', marginBottom: '4px' }}>{name}</div>
+      <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{count}</div>
     </div>
-    <div className="font-mono font-semibold text-success text-sm">{price}</div>
+    <div style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--accent-primary)' }}>{price}</div>
   </div>
 );

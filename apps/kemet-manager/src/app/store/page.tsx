@@ -5,48 +5,60 @@ import { Plus, Edit, Trash2, TrendingUp, Filter, Download } from 'lucide-react';
 
 export default function StorePage() {
     return (
-        <div className="max-w-7xl mx-auto">
-            <header className="flex justify-between items-center mb-10">
+        <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+            <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
                 <div>
-                    <h1 className="text-3xl font-bold mb-2">Kemet Store</h1>
-                    <p className="text-secondary">Catalogue des fonctionnalités et abonnements.</p>
+                    <h1 style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '8px' }}>Kemet Store</h1>
+                    <p style={{ color: 'var(--text-secondary)' }}>Catalogue des fonctionnalités et abonnements.</p>
                 </div>
-                <button className="primary-button flex items-center gap-2">
+                <button style={{
+                    background: 'var(--accent-primary)',
+                    color: 'white',
+                    padding: '12px 20px',
+                    borderRadius: 'var(--radius-sm)',
+                    fontWeight: 600,
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    fontSize: '14px'
+                }}>
                     <Plus size={18} />
                     Ajouter une fonctionnalité
                 </button>
             </header>
 
             {/* Filters & Actions Bar */}
-            <div className="flex justify-between items-center mb-6">
-                <div className="flex gap-4">
-                    <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/5 text-sm hover:bg-white/10 transition-colors">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                <div style={{ display: 'flex', gap: '16px' }}>
+                    <button style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: 'var(--radius-sm)', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', color: 'white', fontSize: '14px', cursor: 'pointer' }}>
                         <Filter size={16} />
                         Tous les types
                     </button>
-                    <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/5 text-sm hover:bg-white/10 transition-colors">
+                    <button style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: 'var(--radius-sm)', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', color: 'white', fontSize: '14px', cursor: 'pointer' }}>
                         Statut: Actif
                     </button>
                 </div>
-                <button className="text-secondary text-sm flex items-center gap-2 hover:text-white transition-colors">
+                <button style={{ color: 'var(--text-secondary)', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', cursor: 'pointer' }}>
                     <Download size={16} /> Exporter CSV
                 </button>
             </div>
 
             {/* Data Table */}
-            <div className="glass-panel overflow-hidden rounded-xl">
-                <table className="w-full text-left border-collapse">
+            <div className="glass-panel" style={{ overflow: 'hidden', borderRadius: 'var(--radius-md)' }}>
+                <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
                     <thead>
-                        <tr className="border-b border-white/10 text-sm text-secondary uppercase tracking-wider">
-                            <th className="p-5 font-semibold">Nom de la Feature</th>
-                            <th className="p-5 font-semibold">Type</th>
-                            <th className="p-5 font-semibold">Prix</th>
-                            <th className="p-5 font-semibold">Revenus (Mensuel)</th>
-                            <th className="p-5 font-semibold">Taux d'adoption</th>
-                            <th className="p-5 font-semibold text-right">Actions</th>
+                        <tr style={{ borderBottom: '1px solid var(--glass-border)' }}>
+                            <th style={{ padding: '20px', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Nom de la Feature</th>
+                            <th style={{ padding: '20px', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Type</th>
+                            <th style={{ padding: '20px', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Prix</th>
+                            <th style={{ padding: '20px', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Revenus (Mensuel)</th>
+                            <th style={{ padding: '20px', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Taux d'adoption</th>
+                            <th style={{ padding: '20px', textAlign: 'right' }}></th>
                         </tr>
                     </thead>
-                    <tbody className="text-sm divide-y divide-white/5">
+                    <tbody style={{ fontSize: '14px' }}>
                         <StoreRow
                             name="Mode Sentinelle"
                             type="Abonnement"
@@ -90,32 +102,38 @@ export default function StorePage() {
 }
 
 const StoreRow = ({ name, type, price, revenue, trend, total, isDown, adoption }: any) => (
-    <tr className="hover:bg-white/5 transition-colors group">
-        <td className="p-5 font-semibold text-white">{name}</td>
-        <td className="p-5">
-            <span className={`px-3 py-1 rounded-full text-xs font-bold ${type === 'Abonnement' ? 'bg-blue-500/20 text-blue-400' : 'bg-warning/20 text-warning'
-                }`}>
+    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }} className="store-row">
+        <td style={{ padding: '20px', fontWeight: 600 }}>{name}</td>
+        <td style={{ padding: '20px' }}>
+            <span style={{
+                padding: '4px 12px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: 600,
+                background: type === 'Abonnement' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(251, 191, 36, 0.1)',
+                color: type === 'Abonnement' ? '#3B82F6' : '#FBBF24'
+            }}>
                 {type}
             </span>
         </td>
-        <td className="p-5 text-secondary font-mono">{price}</td>
-        <td className="p-5">
-            <div className="font-bold text-white mb-1">{revenue}</div>
-            <div className={`flex items-center gap-1 text-xs ${isDown ? 'text-error' : 'text-success'}`}>
-                <TrendingUp size={12} className={isDown ? 'rotate-180' : ''} />
-                {trend} {total && <span className="text-secondary font-normal">(Total)</span>}
+        <td style={{ padding: '20px', color: 'var(--text-secondary)', fontFamily: 'monospace' }}>{price}</td>
+        <td style={{ padding: '20px' }}>
+            <div style={{ fontWeight: 600, marginBottom: '4px' }}>{revenue}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: isDown ? '#EF4444' : '#10B981' }}>
+                <TrendingUp size={12} style={{ transform: isDown ? 'rotate(180deg)' : 'none' }} />
+                {trend} {total && <span style={{ color: 'var(--text-secondary)', fontWeight: 400 }}>(Total)</span>}
             </div>
         </td>
-        <td className="p-5">
-            <div className="w-24 h-2 bg-white/10 rounded-full overflow-hidden">
-                <div style={{ width: adoption }} className="h-full bg-accent"></div>
+        <td style={{ padding: '20px' }}>
+            <div style={{ width: '100px', height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '999px', overflow: 'hidden' }}>
+                <div style={{ width: adoption, height: '100%', background: 'var(--accent-primary)' }}></div>
             </div>
-            <span className="text-xs text-secondary mt-1 block">{adoption}</span>
+            <span style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', display: 'block' }}>{adoption}</span>
         </td>
-        <td className="p-5 text-right">
-            <div className="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                <button className="p-2 hover:bg-white/10 rounded-lg text-secondary hover:text-white transition-colors"><Edit size={16} /></button>
-                <button className="p-2 hover:bg-error/20 rounded-lg text-secondary hover:text-error transition-colors"><Trash2 size={16} /></button>
+        <td style={{ padding: '20px', textAlign: 'right' }}>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', opacity: 0 }} className="row-actions">
+                <button style={{ padding: '8px', background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: 'var(--radius-sm)', color: 'var(--text-secondary)', cursor: 'pointer' }}><Edit size={16} /></button>
+                <button style={{ padding: '8px', background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: 'var(--radius-sm)', color: 'var(--text-secondary)', cursor: 'pointer' }}><Trash2 size={16} /></button>
             </div>
         </td>
     </tr>

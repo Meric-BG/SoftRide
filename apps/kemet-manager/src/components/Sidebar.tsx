@@ -3,7 +3,14 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, RefreshCw, ShoppingBag, Truck, Settings, LogOut, UploadCloud } from 'lucide-react';
+import {
+    LayoutDashboard,
+    UploadCloud,
+    ShoppingBag,
+    Truck,
+    Settings,
+    LogOut
+} from 'lucide-react';
 
 const Sidebar = () => {
     const pathname = usePathname();
@@ -20,12 +27,12 @@ const Sidebar = () => {
                     padding: '12px 16px',
                     borderRadius: 'var(--radius-sm)',
                     color: isActive ? '#FFFFFF' : 'var(--text-secondary)',
-                    background: isActive ? 'rgba(31, 111, 92, 0.2)' : 'transparent',
+                    background: isActive ? 'rgba(31, 111, 92, 0.15)' : 'transparent',
                     borderLeft: isActive ? '3px solid var(--accent-primary)' : '3px solid transparent',
                     textDecoration: 'none',
                     transition: 'all 0.2s ease',
                     fontSize: '14px',
-                    fontWeight: 500
+                    fontWeight: isActive ? 600 : 500
                 }}
             >
                 {icon}
@@ -38,7 +45,7 @@ const Sidebar = () => {
         <aside style={{
             width: '260px',
             height: '100vh',
-            background: 'var(--bg-secondary)', // Charcoal Lighter
+            background: 'var(--bg-secondary)',
             borderRight: '1px solid var(--glass-border)',
             position: 'fixed',
             left: 0,
@@ -63,7 +70,7 @@ const Sidebar = () => {
                 <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px', marginTop: '24px', paddingLeft: '16px' }}>
                     Gestion
                 </div>
-                <NavLink href="/updates" icon={<UploadCloud size={18} />} label="Mises à jour (FOTA)" />
+                <NavLink href="/updates" icon={<UploadCloud size={18} />} label="Mises à jour" />
                 <NavLink href="/store" icon={<ShoppingBag size={18} />} label="Kemet Store" />
                 <NavLink href="/fleet" icon={<Truck size={18} />} label="Flotte" />
             </nav>
