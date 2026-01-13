@@ -7,7 +7,7 @@ const { v4: uuidv4 } = require('uuid');
 const archiver = require('archiver');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'secret-token';
 
 const DATA_DIR = path.join(__dirname, 'data');
