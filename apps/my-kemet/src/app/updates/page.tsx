@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Download, CheckCircle, Clock, AlertCircle } from 'lucide-react';
-import { api } from '../lib/api';
+import { api } from '../../lib/api';
 
 export default function UpdatesPage() {
     const [updates, setUpdates] = useState<any[]>([]);
@@ -13,7 +13,18 @@ export default function UpdatesPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        loadUpdates();
+        // Auto-login for demo if no token exists
+        const initializeAndLoad = async () => {
+            if (!api.token) {
+                try {
+                    await api.login('meric@kemet.com', 'password');
+                } catch (err) {
+                    console.error('Auto-login failed:', err);
+                }
+            }
+            loadUpdates();
+        };
+        initializeAndLoad();
     }, []);
 
     const loadUpdates = async () => {

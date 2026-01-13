@@ -1,20 +1,57 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { UploadCloud, CheckCircle, AlertCircle, Clock } from 'lucide-react';
+import { adminApi } from '../../lib/api';
 
 export default function UpdatesPage() {
     const [deploying, setDeploying] = useState(false);
+    const [version, setVersion] = useState('');
+    const [notes, setNotes] = useState('');
+    const [success, setSuccess] = useState('');
+    const [error, setError] = useState('');
 
-    const handleDeploy = (e: React.FormEvent) => {
+    useEffect(() => {
+        // Auto-login for demo if no token exists
+        const initializeAdmin = async () => {
+            if (!adminApi.token) {
+                try {
+                    await adminApi.login('admin@kemet.com', 'password');
+                } catch (err) {
+                    console.error('Auto-login failed:', err);
+                }
+            }
+        };
+        initializeAdmin();
+    }, []);
+
+    const handleDeploy = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!version || !notes) {
+            setError('Version et notes sont requis');
+            return;
+        }
+
         setDeploying(true);
-        setTimeout(() => {
+        setError('');
+        setSuccess('');
+
+        try {
+            const result = await adminApi.deployUpdate(version, notes);
+            setSuccess(result.message || `Mise à jour ${version} déployée avec succès !`);
+            setVersion('');
+            setNotes('');
+
+            setTimeout(() => setSuccess(''), 5000);
+        } catch (err: any) {
+            setError(err.message || 'Erreur lors du déploiement');
+        } finally {
             setDeploying(false);
-            alert('Mise à jour v2.5.0 déployée avec succès vers 850 véhicules !');
-        }, 2000);
+        }
     };
+
 
     return (
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
@@ -22,6 +59,32 @@ export default function UpdatesPage() {
                 <h1 style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '8px' }}>Gestion des Mises à jour</h1>
                 <p style={{ color: 'var(--text-secondary)' }}>Publiez des mises à jour FOTA (Firmware Over-The-Air) pour la flotte.</p>
             </header>
+
+            {error && (
+                <div style={{
+                    padding: '16px',
+                    marginBottom: '24px',
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                    borderRadius: 'var(--radius-sm)',
+                    color: '#EF4444'
+                }}>
+                    {error}
+                </div>
+            )}
+
+            {success && (
+                <div style={{
+                    padding: '16px',
+                    marginBottom: '24px',
+                    background: 'rgba(16, 185, 129, 0.1)',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    borderRadius: 'var(--radius-sm)',
+                    color: '#10B981'
+                }}>
+                    {success}
+                </div>
+            )}
 
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px' }}>
 
@@ -34,7 +97,12 @@ export default function UpdatesPage() {
 
                     <form onSubmit={handleDeploy} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-                            <InputGroup label="Version du Build" placeholder="ex: 2.5.0.124" />
+                            <InputGroup
+                                label="Version du Build"
+                                placeholder="ex: 2.5.0"
+                                value={version}
+                                onChange={(e: any) => setVersion(e.target.value)}
+                            />
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                 <label style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-secondary)' }}>Priorité</label>
                                 <select style={{
@@ -57,6 +125,8 @@ export default function UpdatesPage() {
                             <textarea
                                 rows={6}
                                 placeholder="- Amélioration de la gestion batterie..."
+                                value={notes}
+                                onChange={(e) => setNotes(e.target.value)}
                                 style={{
                                     background: 'rgba(0,0,0,0.4)',
                                     border: '1px solid var(--glass-border)',
@@ -150,12 +220,14 @@ export default function UpdatesPage() {
     );
 }
 
-const InputGroup = ({ label, placeholder }: any) => (
+const InputGroup = ({ label, placeholder, value, onChange }: any) => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <label style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-secondary)' }}>{label}</label>
         <input
             type="text"
             placeholder={placeholder}
+            value={value}
+            onChange={onChange}
             style={{
                 background: 'rgba(0,0,0,0.4)',
                 border: '1px solid var(--glass-border)',

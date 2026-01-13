@@ -4,6 +4,8 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 class AdminAPIClient {
+    token: string | null;
+
     constructor() {
         this.token = null;
         if (typeof window !== 'undefined') {
@@ -25,10 +27,10 @@ class AdminAPIClient {
         }
     }
 
+
     async request(endpoint: string, options: RequestInit = {}) {
-        const headers: HeadersInit = {
+        const headers: Record<string, string> = {
             'Content-Type': 'application/json',
-            ...options.headers,
         };
 
         if (this.token) {
