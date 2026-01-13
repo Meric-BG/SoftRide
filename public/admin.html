@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Admin - FOTA POC</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="/main.css">
+</head>
+<body>
+  <h1>Admin - Publish Update</h1>
+  <form id="publishForm">
+    <label>Version<br><input name="version" placeholder="1.0.0"></label><br>
+    <label>Type<br>
+      <select name="type">
+        <option>FOTA</option>
+        <option>Feature</option>
+      </select>
+    </label><br>
+    <label>Features (comma separated)<br><input name="features" placeholder="featureA,featureB"></label><br>
+    <label>File<br><input type="file" name="file"></label><br>
+    <label>Admin token<br><input name="token" placeholder="admin token (default: secret-token)"></label><br>
+    <button type="submit">Publish</button>
+  </form>
+  <pre id="result"></pre>
+
+  <script>
+  const form = document.getElementById('publishForm');
+  const result = document.getElementById('result');
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    const f = new FormData(form);
+    const token = f.get('token') || '';
+    try {
+      const r = await fetch('/api/publish', { method: 'POST', headers: { 'x-admin-token': token }, body: f });
+      const j = await r.json();
+      result.textContent = JSON.stringify(j, null, 2);
+    } catch (err) {
+      result.textContent = err.message;
+    }
+  });
+  </script>
+</body>
+</html>
