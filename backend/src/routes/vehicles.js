@@ -1,5 +1,5 @@
 const express = require('express');
-const db = require('../models/supabaseDB'); // Changed from database.js
+const vehicleRepo = require('../repositories/VehicleRepository');
 const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
@@ -7,7 +7,7 @@ const router = express.Router();
 // Get vehicle info
 router.get('/:id', authMiddleware, async (req, res) => {
     try {
-        const vehicle = await db.getVehicleById(req.params.id);
+        const vehicle = await vehicleRepo.findById(req.params.id);
 
         if (!vehicle) {
             return res.status(404).json({ error: 'Véhicule non trouvé' });
@@ -24,13 +24,13 @@ router.get('/:id', authMiddleware, async (req, res) => {
 router.post('/:id/lock', authMiddleware, async (req, res) => {
     try {
         const { locked } = req.body;
-        const vehicle = await db.getVehicleById(req.params.id);
+        const vehicle = await vehicleRepo.findById(req.params.id);
 
         if (!vehicle) {
             return res.status(404).json({ error: 'Véhicule non trouvé' });
         }
 
-        const updated = await db.updateVehicle(req.params.id, {
+        const updated = await vehicleRepo.update(req.params.id, {
             locked: locked !== undefined ? locked : !vehicle.locked
         });
 
@@ -45,13 +45,13 @@ router.post('/:id/lock', authMiddleware, async (req, res) => {
 router.post('/:id/climate', authMiddleware, async (req, res) => {
     try {
         const { climate } = req.body;
-        const vehicle = await db.getVehicleById(req.params.id);
+        const vehicle = await vehicleRepo.findById(req.params.id);
 
         if (!vehicle) {
             return res.status(404).json({ error: 'Véhicule non trouvé' });
         }
 
-        const updated = await db.updateVehicle(req.params.id, {
+        const updated = await vehicleRepo.update(req.params.id, {
             climate: climate !== undefined ? climate : !vehicle.climate
         });
 
@@ -66,13 +66,13 @@ router.post('/:id/climate', authMiddleware, async (req, res) => {
 router.post('/:id/charge', authMiddleware, async (req, res) => {
     try {
         const { charging } = req.body;
-        const vehicle = await db.getVehicleById(req.params.id);
+        const vehicle = await vehicleRepo.findById(req.params.id);
 
         if (!vehicle) {
             return res.status(404).json({ error: 'Véhicule non trouvé' });
         }
 
-        const updated = await db.updateVehicle(req.params.id, {
+        const updated = await vehicleRepo.update(req.params.id, {
             charging: charging !== undefined ? charging : !vehicle.charging
         });
 
@@ -86,7 +86,7 @@ router.post('/:id/charge', authMiddleware, async (req, res) => {
 // Get vehicle features
 router.get('/:id/features', authMiddleware, async (req, res) => {
     try {
-        const features = await db.getActiveFeaturesByVehicle(req.params.id);
+        const features = await vehicleRepo.getActiveFeatures(req.params.id);
         res.json(features);
     } catch (error) {
         console.error('Get features error:', error);

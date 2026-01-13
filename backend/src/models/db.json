@@ -50,7 +50,7 @@
             "name": "Mode Sentinelle",
             "description": "Surveillance vidéo 360° et alertes en temps réel",
             "type": "subscription",
-            "price": 5000,
+            "price": 5001,
             "currency": "FCFA",
             "interval": "monthly",
             "active": true
@@ -60,7 +60,7 @@
             "name": "Boost Accélération",
             "description": "Déverrouillage de la puissance maximale du moteur",
             "type": "one-time",
-            "price": 1500000,
+            "price": 1500100,
             "currency": "FCFA",
             "active": true
         },
@@ -79,7 +79,7 @@
             "name": "Pack Hiver",
             "description": "Préchauffage batterie et habitacle optimisé",
             "type": "one-time",
-            "price": 250000,
+            "price": 250010,
             "currency": "FCFA",
             "active": true
         }
@@ -126,7 +126,7 @@
     ],
     "analytics": {
         "revenue": {
-            "total": 32500000,
+            "total": 32500100,
             "monthly": 4200000,
             "mrr": 1800000,
             "growth": 12.5

@@ -37,26 +37,26 @@ cd /home/mericstudent/softride
 npm run backend:dev
 ```
 
-Server runs on: **http://localhost:5000**
+Server runs on: **http://localhost:5001**
 
 ### 2. Test Endpoints
 
 #### Login
 ```bash
-curl -X POST http://localhost:5000/api/auth/login \
+curl -X POST http://localhost:5001/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"meric@kemet.com","password":"password"}'
 ```
 
 #### Get Vehicle Info
 ```bash
-curl http://localhost:5000/api/vehicles/v1 \
+curl http://localhost:5001/api/vehicles/v1 \
   -H "Authorization: Bearer YOUR_TOKEN_HERE"
 ```
 
 #### Get Features
 ```bash
-curl http://localhost:5000/api/store/features
+curl http://localhost:5001/api/store/features
 ```
 
 ## Supabase Dashboard

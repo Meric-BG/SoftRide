@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    body {
+        @apply bg-kemet-black text-kemet-text antialiased font-sans overflow-x-hidden;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        @apply font-display tracking-tight text-white;
+    }
+}
+
+@layer components {
+    .k-card {
+        @apply bg-kemet-charcoal border border-kemet-border rounded-2xl shadow-card backdrop-blur-sm;
+    }
+
+    .k-input {
+        @apply w-full bg-black/30 border border-kemet-border rounded-xl py-3 px-4 focus:outline-none focus:border-kemet-green focus:ring-1 focus:ring-kemet-green transition-all text-white placeholder-kemet-subtext;
+    }
+
+    .k-btn-primary {
+        @apply w-full bg-kemet-green hover:bg-kemet-greenHover text-white font-medium py-3.5 rounded-xl shadow-glow active:scale-[0.98] transition-all flex items-center justify-center gap-2 tracking-wide uppercase text-xs;
+    }
+
+    .k-btn-secondary {
+        @apply w-full bg-white/5 hover:bg-white/10 text-white font-medium py-3.5 rounded-xl border border-kemet-border transition-all flex items-center justify-center gap-2;
+    }
+
+    .k-badge {
+        @apply px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border;
+    }
+}

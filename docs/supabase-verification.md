@@ -4,7 +4,7 @@
 
 ### 1. Test de Login (Auth)
 ```bash
-curl -X POST http://localhost:5000/api/auth/login \
+curl -X POST http://localhost:5001/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"meric@kemet.com","password":"password"}'
 ```
@@ -13,14 +13,14 @@ curl -X POST http://localhost:5000/api/auth/login \
 
 ### 2. Test de Récupération des Features (Store)
 ```bash
-curl http://localhost:5000/api/store/features
+curl http://localhost:5001/api/store/features
 ```
 
 **Résultat attendu :** Liste des 4 features de la base Supabase
 
 ### 3. Test de Récupération des Mises à Jour (FOTA)
 ```bash
-curl http://localhost:5000/api/updates
+curl http://localhost:5001/api/updates
 ```
 
 **Résultat attendu :** Liste des 3 campagnes FOTA de Supabase

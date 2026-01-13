@@ -40,7 +40,7 @@ Une fois le localStorage vidé, vous devriez pouvoir :
 
 ```bash
 # 1. Vérifier que le backend retourne le bon rôle
-curl -X POST http://localhost:5000/api/auth/login \
+curl -X POST http://localhost:5001/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@kemet.com","password":"password"}' \
   | jq '.user.role'

@@ -130,7 +130,7 @@ async function migrateData() {
                     end_date: p.expiresAt?.split('T')[0] || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
                     status: p.status === 'active' ? 'ACTIVE' : 'EXPIRED',
                     auto_renew: true,
-                    price: 5000,
+                    price: 5001,
                     currency: 'XOF' // ISO code for West African CFA franc
                 })), { onConflict: 'subscription_id' });
 

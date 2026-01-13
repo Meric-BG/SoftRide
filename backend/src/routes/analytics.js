@@ -1,5 +1,5 @@
 const express = require('express');
-const db = require('../models/supabaseDB');
+const analyticsRepo = require('../repositories/AnalyticsRepository');
 const { authMiddleware, adminMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
@@ -7,7 +7,7 @@ const router = express.Router();
 // Get dashboard overview
 router.get('/overview', authMiddleware, adminMiddleware, async (req, res) => {
     try {
-        const overview = await db.getAnalyticsOverview();
+        const overview = await analyticsRepo.getOverview();
         res.json(overview);
     } catch (error) {
         console.error('Get overview error:', error);
@@ -18,7 +18,7 @@ router.get('/overview', authMiddleware, adminMiddleware, async (req, res) => {
 // Get revenue analytics
 router.get('/revenue', authMiddleware, adminMiddleware, async (req, res) => {
     try {
-        const overview = await db.getAnalyticsOverview();
+        const overview = await analyticsRepo.getOverview();
         res.json(overview.revenue);
     } catch (error) {
         console.error('Get revenue error:', error);
@@ -29,7 +29,7 @@ router.get('/revenue', authMiddleware, adminMiddleware, async (req, res) => {
 // Get fleet analytics
 router.get('/fleet', authMiddleware, adminMiddleware, async (req, res) => {
     try {
-        const overview = await db.getAnalyticsOverview();
+        const overview = await analyticsRepo.getOverview();
         res.json(overview.fleet);
     } catch (error) {
         console.error('Get fleet error:', error);
@@ -40,7 +40,7 @@ router.get('/fleet', authMiddleware, adminMiddleware, async (req, res) => {
 // Get sales analytics
 router.get('/sales', authMiddleware, adminMiddleware, async (req, res) => {
     try {
-        const overview = await db.getAnalyticsOverview();
+        const overview = await analyticsRepo.getOverview();
         res.json(overview.sales);
     } catch (error) {
         console.error('Get sales error:', error);
@@ -51,7 +51,7 @@ router.get('/sales', authMiddleware, adminMiddleware, async (req, res) => {
 // Get top selling features
 router.get('/top-sales', authMiddleware, adminMiddleware, async (req, res) => {
     try {
-        const topSales = await db.getTopSales(10);
+        const topSales = await analyticsRepo.getTopSales(10);
         res.json(topSales);
     } catch (error) {
         console.error('Get top sales error:', error);

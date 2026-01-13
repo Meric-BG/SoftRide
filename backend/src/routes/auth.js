@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
-const db = require('../models/supabaseDB'); // Changed from database.js
+const userRepo = require('../repositories/UserRepository');
 const { authMiddleware, JWT_SECRET } = require('../middleware/auth');
 
 const router = express.Router();
@@ -16,7 +16,7 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ error: 'Email et mot de passe requis' });
         }
 
-        const user = await db.getUserByEmail(email);
+        const user = await userRepo.findByEmail(email);
         if (!user) {
             return res.status(401).json({ error: 'Identifiants invalides' });
         }
@@ -60,7 +60,7 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ error: 'Tous les champs sont requis' });
         }
 
-        const existingUser = await db.getUserByEmail(email);
+        const existingUser = await userRepo.findByEmail(email);
         if (existingUser) {
             return res.status(400).json({ error: 'Cet email est déjà utilisé' });
         }
@@ -78,7 +78,7 @@ router.post('/register', async (req, res) => {
             verified_email: false
         };
 
-        await db.createUser(newUser);
+        await userRepo.create(newUser);
 
         const token = jwt.sign(
             { id: newUser.user_id, email: newUser.email, role: 'user' },
@@ -104,7 +104,7 @@ router.post('/register', async (req, res) => {
 // Get current user
 router.get('/me', authMiddleware, async (req, res) => {
     try {
-        const user = await db.getUserById(req.user.id);
+        const user = await userRepo.findById(req.user.id);
         if (!user) {
             return res.status(404).json({ error: 'Utilisateur non trouvé' });
         }

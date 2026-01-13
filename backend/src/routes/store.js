@@ -1,6 +1,6 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
-const db = require('../models/supabaseDB');
+const featureRepo = require('../repositories/FeatureRepository');
 const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
@@ -8,7 +8,7 @@ const router = express.Router();
 // Get all features
 router.get('/features', async (req, res) => {
     try {
-        const features = await db.getFeatures();
+        const features = await featureRepo.findAll();
         res.json(features);
     } catch (error) {
         console.error('Get features error:', error);
@@ -25,13 +25,13 @@ router.post('/purchase', authMiddleware, async (req, res) => {
             return res.status(400).json({ error: 'featureId et vehicleId requis' });
         }
 
-        const feature = await db.getFeatureById(featureId);
+        const feature = await featureRepo.findById(featureId);
         if (!feature) {
             return res.status(404).json({ error: 'Feature non trouvée' });
         }
 
         // Check if already purchased
-        const existing = await db.getSubscriptionsByVehicleId(vehicleId);
+        const existing = await featureRepo.findSubscriptionsByVehicle(vehicleId);
         const alreadyPurchased = existing.find(s =>
             s.feature_id === featureId && s.status === 'ACTIVE'
         );
@@ -57,7 +57,7 @@ router.post('/purchase', authMiddleware, async (req, res) => {
             currency: feature.currency
         };
 
-        const created = await db.createSubscription(subscription);
+        const created = await featureRepo.createSubscription(subscription);
 
         // Create feature activation
         const activation = {
@@ -74,7 +74,7 @@ router.post('/purchase', authMiddleware, async (req, res) => {
             request_source: 'WEB_PORTAL'
         };
 
-        await db.createFeatureActivation(activation);
+        await featureRepo.createFeatureActivation(activation);
 
         res.status(201).json({
             success: true,
@@ -90,7 +90,7 @@ router.post('/purchase', authMiddleware, async (req, res) => {
 // Get user purchases
 router.get('/purchases', authMiddleware, async (req, res) => {
     try {
-        const subscriptions = await db.getSubscriptionsByUserId(req.user.id);
+        const subscriptions = await featureRepo.findSubscriptionsByUser(req.user.id);
         res.json(subscriptions);
     } catch (error) {
         console.error('Get purchases error:', error);

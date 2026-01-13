@@ -8,7 +8,7 @@ cd /home/mericstudent/softride
 npm run backend:dev
 ```
 
-Le serveur démarre sur **http://localhost:5000**
+Le serveur démarre sur **http://localhost:5001**
 
 ### 2. Comptes de test
 
@@ -156,7 +156,7 @@ Top des ventes
 
 ```typescript
 // apps/my-kemet/src/lib/api.ts
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'http://localhost:5001/api';
 
 export async function login(email: string, password: string) {
   const response = await fetch(`${API_URL}/auth/login`, {

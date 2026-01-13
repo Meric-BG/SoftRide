@@ -4,7 +4,7 @@
 
 ### Applications Démarrées
 
-1. **Backend API** - Port 5000
+1. **Backend API** - Port 5001
    - Express.js + Supabase PostgreSQL
    - Toutes les routes fonctionnelles
    
@@ -21,7 +21,7 @@
 #### Problèmes Résolus
 1. ✅ **Module not found '../lib/api'** - Fichiers API clients créés
 2. ✅ **TypeScript HeadersInit errors** - Types corrigés avec `Record<string, string>`
-3. ✅ **Port conflict 5000** - Processus précédent terminé
+3. ✅ **Port conflict 5001** - Processus précédent terminé
 4. ✅ **Port 3002 → 3001** - Kemet Manager ajusté automatiquement
 
 #### Fichiers Modifiés
@@ -34,7 +34,7 @@
 ### 1. Vérifier que tout tourne
 ```bash
 # Backend
-curl http://localhost:5000/api/health
+curl http://localhost:5001/api/health
 # Devrait retourner: {"status":"ok","timestamp":"..."}
 
 # My Kemet
@@ -66,7 +66,7 @@ curl http://localhost:3001
 
 ```bash
 # Login utilisateur
-curl -X POST http://localhost:5000/api/auth/login \
+curl -X POST http://localhost:5001/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"meric@kemet.com","password":"password"}'
 
@@ -74,7 +74,7 @@ curl -X POST http://localhost:5000/api/auth/login \
 TOKEN="<votre_token>"
 
 # Voir les mises à jour disponibles
-curl http://localhost:5000/api/updates/available/v1 \
+curl http://localhost:5001/api/updates/available/v1 \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -100,7 +100,7 @@ curl http://localhost:5000/api/updates/available/v1 \
 │  │  My Kemet    │    │    Kemet     │   │  Backend   │ │
 │  │  (User)      │    │   Manager    │   │    API     │ │
 │  │              │    │   (Admin)    │   │            │ │
-│  │  Port 3000   │    │  Port 3001   │   │  Port 5000 │ │
+│  │  Port 3000   │    │  Port 3001   │   │  Port 5001 │ │
 │  └──────┬───────┘    └──────┬───────┘   └─────┬──────┘ │
 │         │                   │                  │         │
 │         │    HTTP API       │    HTTP API      │         │
@@ -158,7 +158,7 @@ User
 
 ## Checklist Finale
 
-- [x] Backend API fonctionnel (port 5000)
+- [x] Backend API fonctionnel (port 5001)
 - [x] My Kemet fonctionnel (port 3000)
 - [x] Kemet Manager fonctionnel (port 3001)
 - [x] API clients créés et types corrects

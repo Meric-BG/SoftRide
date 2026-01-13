@@ -60,7 +60,7 @@ export default function UpdatesPage() {
             setVersion('');
             setNotes('');
 
-            setTimeout(() => setSuccess(''), 5000);
+            setTimeout(() => setSuccess(''), 5001);
         } catch (err: any) {
             setError(err.message || 'Erreur lors du déploiement');
         } finally {

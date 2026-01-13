@@ -1,7 +1,7 @@
 // API Client for My Kemet
-// Connects to the backend API at http://localhost:5000
+// Connects to the backend API at http://localhost:5001
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
 
 class APIClient {
     token: string | null;

@@ -11,7 +11,7 @@ Ce guide vous permet de tester l'intégration complète entre les frontends (My 
 cd /home/mericstudent/softride
 node backend/src/server.js
 ```
-✅ Backend disponible sur: **http://localhost:5000**
+✅ Backend disponible sur: **http://localhost:5001**
 
 ### 2. Démarrer My Kemet (User App)
 ```bash
@@ -98,7 +98,7 @@ npm run dev
 
 **Vérification Backend:**
 ```bash
-curl http://localhost:5000/api/vehicles/v1 \
+curl http://localhost:5001/api/vehicles/v1 \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
@@ -131,20 +131,20 @@ curl http://localhost:5000/api/vehicles/v1 \
 
 #### Login
 ```bash
-curl -X POST http://localhost:5000/api/auth/login \
+curl -X POST http://localhost:5001/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"meric@kemet.com","password":"password"}'
 ```
 
 #### Voir les mises à jour disponibles
 ```bash
-curl http://localhost:5000/api/updates/available/v1 \
+curl http://localhost:5001/api/updates/available/v1 \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
 #### Publier une mise à jour (Admin)
 ```bash
-curl -X POST http://localhost:5000/api/updates/deploy \
+curl -X POST http://localhost:5001/api/updates/deploy \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer ADMIN_TOKEN" \
   -d '{"version":"2.6.0","notes":"Test update"}'
@@ -177,7 +177,7 @@ curl -X POST http://localhost:5000/api/updates/deploy \
 
 ## Checklist de Test
 
-- [ ] Backend démarré (port 5000)
+- [ ] Backend démarré (port 5001)
 - [ ] My Kemet démarré (port 3000)
 - [ ] Kemet Manager démarré (port 3002)
 - [ ] Login utilisateur fonctionne
