@@ -28,8 +28,10 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ error: 'Identifiants invalides' });
         }
 
+        const userRole = user.email === 'admin@kemet.com' ? 'admin' : 'user';
+
         const token = jwt.sign(
-            { id: user.user_id, email: user.email, role: user.account_status === 'ACTIVE' ? 'user' : 'inactive' },
+            { id: user.user_id, email: user.email, role: userRole },
             JWT_SECRET,
             { expiresIn: '7d' }
         );
@@ -40,7 +42,7 @@ router.post('/login', async (req, res) => {
                 id: user.user_id,
                 email: user.email,
                 name: `${user.first_name} ${user.last_name}`,
-                role: 'user'
+                role: userRole
             }
         });
     } catch (error) {
@@ -111,7 +113,7 @@ router.get('/me', authMiddleware, async (req, res) => {
             id: user.user_id,
             email: user.email,
             name: `${user.first_name} ${user.last_name}`,
-            role: 'user'
+            role: user.email === 'admin@kemet.com' ? 'admin' : 'user'
         });
     } catch (error) {
         console.error('Get user error:', error);

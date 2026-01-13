@@ -13,14 +13,30 @@ export default function UpdatesPage() {
     const [error, setError] = useState('');
 
     useEffect(() => {
-        // Auto-login for demo if no token exists
+        // Auto-login for demo or re-login if role is incorrect
         const initializeAdmin = async () => {
-            if (!adminApi.token) {
-                try {
-                    await adminApi.login('admin@kemet.com', 'password');
-                } catch (err) {
-                    console.error('Auto-login failed:', err);
+            try {
+                let shouldLogin = !adminApi.token;
+
+                if (adminApi.token) {
+                    try {
+                        const me = await adminApi.request('/auth/me');
+                        if (me.role !== 'admin') {
+                            adminApi.clearToken();
+                            shouldLogin = true;
+                        }
+                    } catch (e) {
+                        adminApi.clearToken();
+                        shouldLogin = true;
+                    }
                 }
+
+                if (shouldLogin) {
+                    await adminApi.login('admin@kemet.com', 'password');
+                }
+            } catch (err) {
+                console.error('Admin initialization failed:', err);
+                setError('Erreur d\'authentification admin');
             }
         };
         initializeAdmin();
