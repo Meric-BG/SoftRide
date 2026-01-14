@@ -1,0 +1,91 @@
+.DS_Store
+Thumbs.db
+# Environment
+.env
+.env.local
+.env.*.local
+.env.example
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+*.pyc
+.Python
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.mypy_cache/
+.pytype/
+coverage/
+htmlcov/
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# Next.js / Vite / Build
+.next/
+out/
+dist/
+build/
+public/build/
+.vite/
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# IDEs and editors
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# OS files
+.DS_Store
+Icon?
+ehthumbs.db
+Thumbs.db
+
+# Database
+*.sqlite3
+*..db
+
+# Docker
+docker-compose.override.yml
+
+# Misc temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+frontend-vite-backup/
+
+# Sensitive or local-only files
+secrets.json
+*.key
+*.pem
+
+# End
