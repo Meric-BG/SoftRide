@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Mail, Phone, Car, CreditCard, History, Shield, CheckCircle, XCircle, Clock } from 'lucide-react';
 import styles from '../Dashboard.module.css';
+import { api } from '@/lib/api';
 
 interface UserData {
     id: string;
@@ -39,11 +40,7 @@ export default function ProfilePage() {
 
     const fetchProfile = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await fetch('http://localhost:5001/api/auth/me', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await res.json();
+            const data = await api.getMe();
             setUser(data);
             setPhone(data.phone_number || '');
         } catch (err) {
@@ -76,18 +73,13 @@ export default function ProfilePage() {
         setUpdating(true);
         setMessage({ text: '', type: '' });
         try {
-            const token = localStorage.getItem('token');
-            // In a real app, we'd have a specific update profile endpoint
-            // For now, let's assume we can POST to /api/auth/update (even if not yet implemented, for the POC feel)
-            // Or we can simulate it since we are in a POC.
-            setTimeout(() => {
-                setUpdating(false);
-                setMessage({ text: 'Profil mis à jour avec succès.', type: 'success' });
-                if (user) setUser({ ...user, phone_number: phone });
-            }, 1000);
-        } catch (err) {
+            const result = await api.updatePhone(phone);
+            setMessage({ text: 'Numéro de téléphone mis à jour avec succès.', type: 'success' });
+            if (user) setUser({ ...user, phone_number: phone });
+        } catch (err: any) {
+            setMessage({ text: err.message || 'Erreur lors de la mise à jour.', type: 'error' });
+        } finally {
             setUpdating(false);
-            setMessage({ text: 'Erreur lors de la mise à jour.', type: 'error' });
         }
     };
 

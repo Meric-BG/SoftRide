@@ -3,6 +3,9 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
 
+// Initialize SQLite Database
+require('./config/db');
+
 // Import routes
 const authRoutes = require('./routes/auth');
 const vehicleRoutes = require('./routes/vehicles');

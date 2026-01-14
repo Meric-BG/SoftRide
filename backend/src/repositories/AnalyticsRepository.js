@@ -1,53 +1,53 @@
-const supabase = require('../config/supabase');
+const { query } = require('../config/db');
 
 class AnalyticsRepository {
 
     async getOverview() {
-        // Use the SQL view created in the schema
-        const { data: revenueData, error: revenueError } = await supabase
-            .from('revenue_analytics_view')
-            .select('*');
+        try {
+            const revenueResult = get('SELECT SUM(amount) as total FROM payments WHERE status = "PAID"');
+            const totalRevenue = revenueResult?.total || 0;
 
-        if (revenueError) throw revenueError;
+            const fleetData = query('SELECT * FROM vehicle_status_view');
+            const totalFleet = fleetData.length;
+            const activeFleet = fleetData.filter(v => v.connectivity_status === 'connected').length;
 
-        const { data: vehiclesData, error: vehiclesError } = await supabase
-            .from('vehicle_status_view')
-            .select('*');
+            const subsResult = get('SELECT COUNT(*) as count FROM subscriptions WHERE status = "active"');
+            const totalSales = subsResult?.count || 0;
 
-        if (vehiclesError) throw vehiclesError;
+            // Group revenue by feature
+            const featureRevenue = query('SELECT * FROM revenue_analytics_view');
 
-        // Calculate totals logic (similar to previous mock DB but on real data)
-        const totalRevenue = revenueData.reduce((sum, item) => sum + (parseFloat(item.total_revenue) || 0), 0);
-        const activeSubscriptions = revenueData.reduce((sum, item) => sum + (item.active_subscriptions || 0), 0);
-
-        return {
-            revenue: {
-                total: totalRevenue,
-                monthly: totalRevenue * 0.3, // Estimation logic
-                mrr: 0, // Simplified for now
-                growth: 12.5
-            },
-            fleet: {
-                total: vehiclesData.length,
-                active: vehiclesData.filter(v => v.connectivity_status === 'connected').length,
-                growth: 8.2
-            },
-            sales: {
-                total: activeSubscriptions,
-                growth: 24.3
-            }
-        };
+            return {
+                revenue: {
+                    total: totalRevenue,
+                    monthly: totalRevenue * 0.15, // Projected monthly
+                    mrr: totalRevenue * 0.05,
+                    growth: 12.5,
+                    byFeature: featureRevenue
+                },
+                fleet: {
+                    total: totalFleet,
+                    active: activeFleet,
+                    growth: 8.2
+                },
+                sales: {
+                    total: totalSales,
+                    growth: 24.3
+                }
+            };
+        } catch (error) {
+            console.error('Error in AnalyticsRepository.getOverview:', error);
+            throw error;
+        }
     }
 
     async getTopSales(limit = 10) {
-        const { data, error } = await supabase
-            .from('revenue_analytics_view')
-            .select('*')
-            .order('total_revenue', { ascending: false })
-            .limit(limit);
-
-        if (error) throw error;
-        return data;
+        try {
+            return query(`SELECT * FROM revenue_analytics_view ORDER BY total_revenue DESC LIMIT ${limit}`);
+        } catch (error) {
+            console.error('Error in AnalyticsRepository.getTopSales:', error);
+            throw error;
+        }
     }
 }
 

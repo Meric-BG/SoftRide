@@ -3,8 +3,36 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { DollarSign, Users, ShoppingBag, Activity, TrendingUp, TrendingDown } from 'lucide-react';
+import { adminApi } from '../lib/api';
 
 export default function AdminDashboard() {
+  const [stats, setStats] = React.useState<any>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState('');
+
+  React.useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const data = await adminApi.getOverview();
+        setStats(data);
+      } catch (err) {
+        console.error('Failed to fetch stats:', err);
+        setError('Erreur lors de la récupération des statistiques');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Chargement...</div>;
+  if (error) return <div style={{ padding: '40px', color: '#EF4444' }}>{error}</div>;
+
+  const formatPrice = (p: number) => {
+    if (p >= 1000000) return (p / 1000000).toFixed(1) + 'M';
+    if (p >= 1000) return (p / 1000).toFixed(1) + 'k';
+    return p.toString();
+  };
   return (
     <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
       {/* Header */}
@@ -17,29 +45,29 @@ export default function AdminDashboard() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px', marginBottom: '40px' }}>
         <StatCard
           title="Revenu Total"
-          value="32.5M FCFA"
-          trend="+12.5%"
+          value={`${formatPrice(stats?.revenue.total || 0)} FCFA`}
+          trend={`+${stats?.revenue.growth}%`}
           isUp={true}
           icon={<DollarSign size={24} style={{ color: 'var(--accent-primary)' }} />}
         />
         <StatCard
           title="Flotte Active"
-          value="1,248"
-          trend="+8.2%"
+          value={stats?.fleet.total.toString() || "0"}
+          trend={`+${stats?.fleet.growth}%`}
           isUp={true}
           icon={<Activity size={24} style={{ color: '#3B82F6' }} />}
         />
         <StatCard
           title="Ventes Store"
-          value="4.2M FCFA"
-          trend="+24.3%"
+          value={stats?.sales.total.toString() || "0"}
+          trend={`+${stats?.sales.growth}%`}
           isUp={true}
           icon={<ShoppingBag size={24} style={{ color: '#FBBF24' }} />}
         />
         <StatCard
           title="Abonnements (MRR)"
-          value="1.8M FCFA"
-          trend="-2.1%"
+          value={`${formatPrice(stats?.revenue.mrr || 0)} FCFA`}
+          trend={`-2.1%`}
           isUp={false}
           icon={<Users size={24} style={{ color: '#A855F7' }} />}
         />
@@ -52,10 +80,14 @@ export default function AdminDashboard() {
         <div className="glass-panel" style={{ padding: '32px', borderRadius: 'var(--radius-md)' }}>
           <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '32px' }}>Revenus par fonctionnalité</h3>
           <div style={{ display: 'flex', alignItems: 'flex-end', height: '300px', gap: '32px', paddingBottom: '20px' }}>
-            <Bar height="60%" label="Sentinelle" color="var(--accent-primary)" />
-            <Bar height="85%" label="Boost" color="#FBBF24" />
-            <Bar height="40%" label="Premium" color="#3B82F6" />
-            <Bar height="30%" label="Data" color="#A855F7" />
+            {stats?.revenue.byFeature?.slice(0, 4).map((f: any, i: number) => (
+              <Bar
+                key={f.feature_id}
+                height={`${Math.min(100, (f.total_revenue / (stats.revenue.total || 1)) * 200)}%`}
+                label={f.name.split(' ')[0]}
+                color={i % 2 === 0 ? 'var(--accent-primary)' : '#FBBF24'}
+              />
+            )) || <p>Pas de données</p>}
           </div>
         </div>
 
@@ -63,10 +95,14 @@ export default function AdminDashboard() {
         <div className="glass-panel" style={{ padding: '32px', borderRadius: 'var(--radius-md)' }}>
           <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '24px' }}>Top Ventes</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <TopItem name="Boost Accélération" count="142 ventes" price="1.5M" />
-            <TopItem name="Mode Sentinelle" count="89 abonnés" price="5k/mois" />
-            <TopItem name="Connectivité" count="312 abonnés" price="2.5k/mois" />
-            <TopItem name="Pack Hiver" count="12 ventes" price="250k" />
+            {stats?.revenue.byFeature?.slice(0, 4).map((f: any) => (
+              <TopItem
+                key={f.feature_id}
+                name={f.name}
+                count={`${f.active_subscriptions} actifs`}
+                price={formatPrice(f.price_amount)}
+              />
+            )) || <p>Pas de données</p>}
           </div>
         </div>
 

@@ -7,6 +7,16 @@ const { authMiddleware, JWT_SECRET } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Helper to generate a unique VIN
+const generateVIN = (brand) => {
+    const prefix = 'KMT-VIN';
+    const randomHex = Math.random().toString(16).substring(2, 8).toUpperCase();
+    const timestamp = Date.now().toString(36).toUpperCase();
+    const year = new Date().getFullYear();
+    const suffix = 'AD';
+    return `${prefix}-${randomHex}-${timestamp}-${year}-${suffix}`;
+};
+
 // Login
 router.post('/login', async (req, res) => {
     try {
@@ -21,8 +31,8 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ error: 'Identifiants invalides' });
         }
 
-        // Pour la démo, on accepte "password" comme mot de passe
-        const isValid = password === 'password' || await bcrypt.compare(password, user.password_hash);
+        // Verify hashed password
+        const isValid = await bcrypt.compare(password, user.password_hash);
 
         if (!isValid) {
             return res.status(401).json({ error: 'Identifiants invalides' });
@@ -54,10 +64,10 @@ router.post('/login', async (req, res) => {
 // Register
 router.post('/register', async (req, res) => {
     try {
-        const { email, password, name } = req.body;
+        const { email, password, name, brand, model, phone } = req.body;
 
-        if (!email || !password || !name) {
-            return res.status(400).json({ error: 'Tous les champs sont requis' });
+        if (!email || !password || !name || !brand || !model) {
+            return res.status(400).json({ error: 'Tous les champs sont requis (nom, email, mot de passe, véhicule)' });
         }
 
         const existingUser = await userRepo.findByEmail(email);
@@ -66,22 +76,42 @@ router.post('/register', async (req, res) => {
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
-        const [firstName, ...lastNameParts] = name.split(' ');
+        const nameParts = name.trim().split(' ');
+        const firstName = nameParts[0];
+        const lastName = nameParts.slice(1).join(' ') || '';
 
+        // Create User
         const newUser = {
-            user_id: uuidv4(),
             email,
             password_hash: hashedPassword,
             first_name: firstName,
-            last_name: lastNameParts.join(' ') || '',
+            last_name: lastName,
+            phone_number: phone || null,
             account_status: 'ACTIVE',
             verified_email: false
         };
 
-        await userRepo.create(newUser);
+        const createdUser = await userRepo.create(newUser);
+
+        // Generate and Create Vehicle (VIN as PK)
+        const vin = generateVIN(brand);
+        const newVehicle = {
+            vin,
+            owner_id: createdUser.user_id,
+            brand_name: brand,
+            model_name: model,
+            battery_level: 100,
+            range_km: 450,
+            os_version: '1.0.0',
+            location_name: 'Dakar',
+            is_locked: true
+        };
+
+        const vehicleRepo = require('../repositories/VehicleRepository');
+        await vehicleRepo.create(newVehicle);
 
         const token = jwt.sign(
-            { id: newUser.user_id, email: newUser.email, role: 'user' },
+            { id: createdUser.user_id, email: createdUser.email, role: 'user' },
             JWT_SECRET,
             { expiresIn: '7d' }
         );
@@ -89,15 +119,16 @@ router.post('/register', async (req, res) => {
         res.status(201).json({
             token,
             user: {
-                id: newUser.user_id,
-                email: newUser.email,
-                name: `${newUser.first_name} ${newUser.last_name}`,
-                role: 'user'
+                id: createdUser.user_id,
+                email: createdUser.email,
+                name: `${createdUser.first_name} ${createdUser.last_name}`,
+                role: 'user',
+                vin: vin
             }
         });
     } catch (error) {
         console.error('Register error:', error);
-        res.status(500).json({ error: 'Erreur serveur' });
+        res.status(500).json({ error: 'Erreur lors de l\'inscription: ' + error.message });
     }
 });
 
@@ -113,13 +144,65 @@ router.get('/me', authMiddleware, async (req, res) => {
             id: user.user_id,
             email: user.email,
             name: `${user.first_name} ${user.last_name}`,
+            firstName: user.first_name,
+            lastName: user.last_name,
             phone_number: user.phone_number,
             role: user.email === 'admin@kemet.com' ? 'admin' : 'user',
-            vehicles: user.vehicles && user.vehicles.length > 0 ? user.vehicles[0] : null
+            vehicles: user.vehicles || null
         });
     } catch (error) {
         console.error('Get user error:', error);
         res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Update phone number
+router.put('/phone', authMiddleware, async (req, res) => {
+    try {
+        const { phone } = req.body;
+
+        if (!phone) {
+            return res.status(400).json({ error: 'Numéro de téléphone requis' });
+        }
+
+        const updated = await userRepo.updatePhone(req.user.id, phone);
+        res.json({
+            success: true,
+            user: {
+                id: updated.user_id,
+                email: updated.email,
+                name: `${updated.first_name} ${updated.last_name}`,
+                phone_number: updated.phone_number
+            }
+        });
+    } catch (error) {
+        console.error('Update phone error:', error);
+        res.status(500).json({ error: 'Erreur lors de la mise à jour du téléphone' });
+    }
+});
+
+// Update email
+router.put('/email', authMiddleware, async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ error: 'Email requis' });
+        }
+
+        const updated = await userRepo.updateEmail(req.user.id, email);
+        res.json({
+            success: true,
+            user: {
+                id: updated.user_id,
+                email: updated.email,
+                name: `${updated.first_name} ${updated.last_name}`,
+                phone_number: updated.phone_number
+            }
+        });
+    } catch (error) {
+        console.error('Update email error:', error);
+        res.status(500).json({ error: error.message || 'Erreur lors de la mise à jour de l\'email' });
     }
 });
 

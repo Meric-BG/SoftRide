@@ -1,0 +1,42 @@
+nohup: ignoring input
+[dotenv@17.2.3] injecting env (7) from ../../.env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+
+╔═══════════════════════════════════════════════╗
+║                                               ║
+║        🚗 KEMET API Server                    ║
+║                                               ║
+║        Port: 5001                             ║
+║        Environment: development              ║
+║                                               ║
+║        Endpoints disponibles:                 ║
+║        • POST /api/auth/login                 ║
+║        • POST /api/auth/register              ║
+║        • GET  /api/vehicles/:id               ║
+║        • GET  /api/store/features             ║
+║        • GET  /api/updates                    ║
+║        • GET  /api/analytics/overview         ║
+║                                               ║
+╚═══════════════════════════════════════════════╝
+  
+Supabase create user error: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'role' column of 'users' in the schema cache"
+}
+Register error: Error: ERREUR SCHEMA : La colonne "role" manque dans la table "users". Veuillez executer le SQL de migration.
+    at UserRepository.create (/home/promis/new_softride/SoftRide/backend/src/repositories/UserRepository.js:74:23)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async /home/promis/new_softride/SoftRide/backend/src/routes/auth.js:98:29
+Supabase findById join error, trying single fetch: {
+  code: 'PGRST200',
+  details: "Searched for a foreign key relationship between 'users' and 'vehicles' using the hint 'owner_id' in the schema 'public', but no matches were found.",
+  hint: "Perhaps you meant 'user_vehicles' instead of 'vehicles'.",
+  message: "Could not find a relationship between 'users' and 'vehicles' in the schema cache"
+}
+Supabase findById join error, trying single fetch: {
+  code: 'PGRST200',
+  details: "Searched for a foreign key relationship between 'users' and 'vehicles' using the hint 'owner_id' in the schema 'public', but no matches were found.",
+  hint: "Perhaps you meant 'user_vehicles' instead of 'vehicles'.",
+  message: "Could not find a relationship between 'users' and 'vehicles' in the schema cache"
+}

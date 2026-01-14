@@ -48,16 +48,66 @@ router.post('/:id/simulate', authMiddleware, async (req, res) => {
         const updated = await paymentRepo.updateStatus(id, status);
 
         if (status === 'PAID') {
-            // In a real app, we would also create the subscription here
             console.log(`Payment ${id} successful. Activating feature for user ${req.user.id}`);
 
-            // Fetch payment details to get feature_id
-            // This is a simplified simulation
-            try {
-                // If we had the feature_id, we would call featureRepo.createSubscription
-                // For now, the simulation just updates the payment status
-            } catch (err) {
-                console.error('Subscription activation failed:', err);
+            // Get payment details to create subscription
+            const payments = await paymentRepo.findByUser(req.user.id);
+            const payment = payments.find(p => p.payment_id === id);
+
+            if (payment && payment.feature_id) {
+                try {
+                    // Get user's vehicle
+                    const userRepo = require('../repositories/UserRepository');
+                    const user = await userRepo.findById(req.user.id);
+
+                    if (user && user.vehicles && user.vehicles.length > 0) {
+                        const vehicleVin = user.vehicles[0].vin;
+
+                        // Get feature details
+                        const feature = await featureRepo.findById(payment.feature_id);
+
+                        if (feature) {
+                            // Create subscription
+                            const subscription = {
+                                user_id: req.user.id,
+                                vehicle_vin: vehicleVin,
+                                feature_id: payment.feature_id,
+                                status: 'active',
+                                start_date: new Date().toISOString(),
+                                expires_at: feature.pricing_model === 'subscription'
+                                    ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+                                    : null,
+                                auto_renew: feature.pricing_model === 'subscription'
+                            };
+
+                            const createdSub = await featureRepo.createSubscription(subscription);
+
+                            // Update payment with subscription_id
+                            const { run: runDb } = require('../config/db');
+                            runDb('UPDATE payments SET subscription_id = ? WHERE payment_id = ?', [createdSub.subscription_id, id]);
+
+                            // Create feature activation
+                            const activation = {
+                                subscription_id: createdSub.subscription_id,
+                                vehicle_vin: vehicleVin,
+                                feature_id: payment.feature_id,
+                                activation_status: 'ACTIVE',
+                                target_status: 'ACTIVE',
+                                activation_request_time: new Date().toISOString(),
+                                activation_start_time: new Date().toISOString(),
+                                requested_by: req.user.id,
+                                request_source: 'PAYMENT_PORTAL'
+                            };
+
+                            await featureRepo.createFeatureActivation(activation);
+
+                            console.log(`✅ Subscription and activation created for payment ${id}`);
+                        }
+                    }
+                } catch (err) {
+                    console.error('Subscription activation failed:', err);
+                    // Don't fail the payment, just log the error
+                }
             }
         }
 
@@ -67,6 +117,7 @@ router.post('/:id/simulate', authMiddleware, async (req, res) => {
         res.status(500).json({ error: 'Erreur lors de la simulation du paiement' });
     }
 });
+
 
 // Get user payment history
 router.get('/history', authMiddleware, async (req, res) => {

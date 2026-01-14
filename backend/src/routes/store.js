@@ -29,12 +29,12 @@ router.post('/features', async (req, res) => {
             feature_id: 'f' + Date.now(),
             name,
             description,
-            base_price: price,
-            pricing_model: pricing_model || 'SUBSCRIPTION',
-            image_url,
-            currency: 'FCFA',
-            is_active: true,
-            is_visible: true,
+            price_amount: price,
+            payment_type: (pricing_model || 'subscription').toLowerCase(),
+            billing_interval: (pricing_model || 'subscription').toLowerCase() === 'subscription' ? 'monthly' : null,
+            image_url: image_url || null,
+            is_active: 1,
+            is_visible: 1,
             created_at: new Date().toISOString()
         };
 
@@ -72,34 +72,28 @@ router.post('/purchase', authMiddleware, async (req, res) => {
 
         // Create subscription
         const subscription = {
-            subscription_id: uuidv4(),
             user_id: req.user.id,
-            vehicle_id: vehicleId,
+            vehicle_vin: vehicleId, // Now referring to VIN
             feature_id: featureId,
-            subscription_plan: feature.pricing_model === 'SUBSCRIPTION' ? 'MONTHLY' : 'LIFETIME',
-            start_date: new Date().toISOString().split('T')[0],
-            end_date: feature.pricing_model === 'SUBSCRIPTION'
-                ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-                : new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 100 years for lifetime
-            status: 'ACTIVE',
-            auto_renew: feature.pricing_model === 'SUBSCRIPTION',
-            price: feature.base_price,
-            currency: feature.currency
+            status: 'active',
+            start_date: new Date().toISOString(),
+            expires_at: feature.pricing_model === 'SUBSCRIPTION'
+                ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+                : null,
+            auto_renew: feature.pricing_model === 'SUBSCRIPTION'
         };
 
         const created = await featureRepo.createSubscription(subscription);
 
         // Create feature activation
         const activation = {
-            activation_id: uuidv4(),
             subscription_id: created.subscription_id,
-            vehicle_id: vehicleId,
+            vehicle_vin: vehicleId,
             feature_id: featureId,
             activation_status: 'ACTIVE',
             target_status: 'ACTIVE',
             activation_request_time: new Date().toISOString(),
             activation_start_time: new Date().toISOString(),
-            activation_end_time: new Date().toISOString(),
             requested_by: req.user.id,
             request_source: 'WEB_PORTAL'
         };

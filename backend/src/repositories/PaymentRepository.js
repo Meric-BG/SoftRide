@@ -1,67 +1,57 @@
-const supabase = require('../config/supabase');
-
-// In-memory store for POC fallback persistence
-const paymentsFallbackStore = [];
+const { get, run, query } = require('../config/db');
 
 class PaymentRepository {
     async create(payment) {
-        const { data, error } = await supabase
-            .from('payments')
-            .insert([payment])
-            .select()
-            .single();
+        try {
+            const columns = Object.keys(payment);
+            const placeholders = columns.map(() => '?').join(', ');
+            const values = Object.values(payment);
 
-        if (error) {
-            console.error('Error creating payment:', error);
-            // Fallback for POC if table doesn't exist or RLS issue
-            console.warn('⚠️ Supabase Payment issue. Using fallback for POC.');
-            const fallbackPayment = {
-                ...payment,
-                payment_id: payment.payment_id || 'sim-' + Date.now(),
-                created_at: payment.created_at || new Date().toISOString()
-            };
-            paymentsFallbackStore.push(fallbackPayment);
-            return fallbackPayment;
+            run(
+                `INSERT INTO payments (${columns.join(', ')}) VALUES (${placeholders})`,
+                values
+            );
+
+            return this.findById(payment.payment_id);
+        } catch (error) {
+            console.error('Error in PaymentRepository.create:', error);
+            throw error;
         }
-        return data;
+    }
+
+    async findById(id) {
+        try {
+            return get('SELECT * FROM payments WHERE payment_id = ?', [id]);
+        } catch (error) {
+            console.error('Error in PaymentRepository.findById:', error);
+            throw error;
+        }
     }
 
     async updateStatus(id, status) {
-        const { data, error } = await supabase
-            .from('payments')
-            .update({ status, updated_at: new Date().toISOString() })
-            .eq('payment_id', id)
-            .select()
-            .single();
-
-        if (error) {
-            console.error('Error updating payment status:', error);
-            const index = paymentsFallbackStore.findIndex(p => p.payment_id === id);
-            if (index !== -1) {
-                paymentsFallbackStore[index].status = status;
-                paymentsFallbackStore[index].updated_at = new Date().toISOString();
-                return paymentsFallbackStore[index];
-            }
-            return { payment_id: id, status, updated_at: new Date().toISOString() };
+        try {
+            const now = new Date().toISOString();
+            run(
+                'UPDATE payments SET status = ?, updated_at = ? WHERE payment_id = ?',
+                [status, now, id]
+            );
+            return this.findById(id);
+        } catch (error) {
+            console.error('Error in PaymentRepository.updateStatus:', error);
+            throw error;
         }
-        return data;
     }
 
     async findByUser(userId) {
-        const { data, error } = await supabase
-            .from('payments')
-            .select('*')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: false });
-
-        if (error) {
-            console.error('Error fetching payments:', error);
-            // Return filtered fallback store
-            return paymentsFallbackStore
-                .filter(p => p.user_id === userId)
-                .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        try {
+            return query(
+                'SELECT * FROM payments WHERE user_id = ? ORDER BY created_at DESC',
+                [userId]
+            );
+        } catch (error) {
+            console.error('Error in PaymentRepository.findByUser:', error);
+            throw error;
         }
-        return (data || []).concat(paymentsFallbackStore.filter(p => p.user_id === userId));
     }
 }
 

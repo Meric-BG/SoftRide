@@ -11,6 +11,20 @@ export default function UpdatesPage() {
     const [notes, setNotes] = useState('');
     const [success, setSuccess] = useState('');
     const [error, setError] = useState('');
+    const [updates, setUpdates] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+
+    const fetchUpdates = async () => {
+        setLoading(true);
+        try {
+            const data = await adminApi.getAllUpdates();
+            setUpdates(data);
+        } catch (err) {
+            console.error('Failed to fetch updates:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
         // Auto-login for demo or re-login if role is incorrect
@@ -32,8 +46,11 @@ export default function UpdatesPage() {
                 }
 
                 if (shouldLogin) {
-                    await adminApi.login('admin@kemet.com', 'password');
+                    await adminApi.login('admin@kemet.com', 'admin123');
                 }
+
+                // Fetch updates once initialized
+                fetchUpdates();
             } catch (err) {
                 console.error('Admin initialization failed:', err);
                 setError('Erreur d\'authentification admin');
@@ -59,6 +76,9 @@ export default function UpdatesPage() {
             setSuccess(result.message || `Mise à jour ${version} déployée avec succès !`);
             setVersion('');
             setNotes('');
+
+            // Refresh history
+            fetchUpdates();
 
             setTimeout(() => setSuccess(''), 5001);
         } catch (err: any) {
@@ -223,9 +243,20 @@ export default function UpdatesPage() {
                     <div className="glass-panel" style={{ padding: '24px', borderRadius: 'var(--radius-md)', flex: 1 }}>
                         <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '24px' }}>Historique</h3>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                            <HistoryItem version="v2.4.1" date="12 Jan 2026" status="success" />
-                            <HistoryItem version="v2.4.0" date="20 Dec 2025" status="success" />
-                            <HistoryItem version="v2.3.5" date="15 Nov 2025" status="warning" />
+                            {loading ? (
+                                <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Chargement...</p>
+                            ) : updates.length > 0 ? (
+                                updates.map(update => (
+                                    <HistoryItem
+                                        key={update.campaign_id}
+                                        version={update.version}
+                                        date={new Date(update.created_at).toLocaleDateString()}
+                                        status={update.status === 'COMPLETED' ? 'success' : 'warning'}
+                                    />
+                                ))
+                            ) : (
+                                <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Aucune mise à jour disponible.</p>
+                            )}
                         </div>
                     </div>
 

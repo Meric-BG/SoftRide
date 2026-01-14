@@ -30,10 +30,14 @@ export default function UpdatesPage() {
     const loadUpdates = async () => {
         try {
             setLoading(true);
-            // Get vehicle ID from user (hardcoded for demo)
-            const vehicleId = 'v1';
-            const data = await api.getAvailableUpdates(vehicleId);
-            setUpdates(data);
+            const userData = await api.getMe();
+            if (userData.vehicles && userData.vehicles.length > 0) {
+                const vin = userData.vehicles[0].vin;
+                const data = await api.getAvailableUpdates(vin);
+                setUpdates(data);
+            } else {
+                setUpdates([]);
+            }
         } catch (err: any) {
             setError(err.message || 'Erreur de chargement');
         } finally {
@@ -47,10 +51,14 @@ export default function UpdatesPage() {
             setError('');
             setSuccess('');
 
-            const vehicleId = 'v1';
-            const result = await api.installUpdate(vehicleId, campaignId);
-
-            setSuccess(result.message || `Mise à jour ${version} installée avec succès !`);
+            const userData = await api.getMe();
+            if (userData.vehicles && userData.vehicles.length > 0) {
+                const vin = userData.vehicles[0].vin;
+                const result = await api.installUpdate(vin, campaignId);
+                setSuccess(result.message || `Mise à jour ${version} installée avec succès !`);
+            } else {
+                throw new Error('Aucun véhicule trouvé pour l\'installation');
+            }
 
             // Reload updates after installation
             setTimeout(() => {

@@ -60,10 +60,10 @@ class APIClient {
         return data;
     }
 
-    async register(email: string, password: string, name: string) {
+    async register(email: string, password: string, name: string, brand: string, model: string, phone?: string) {
         const data = await this.request('/auth/register', {
             method: 'POST',
-            body: JSON.stringify({ email, password, name }),
+            body: JSON.stringify({ email, password, name, brand, model, phone }),
         });
         this.setToken(data.token);
         return data;
@@ -71,6 +71,28 @@ class APIClient {
 
     async getMe() {
         return this.request('/auth/me');
+    }
+
+    async updatePhone(phone: string) {
+        return this.request('/auth/phone', {
+            method: 'PUT',
+            body: JSON.stringify({ phone }),
+        });
+    }
+
+    async updateEmail(email: string) {
+        return this.request('/auth/email', {
+            method: 'PUT',
+            body: JSON.stringify({ email }),
+        });
+    }
+
+    logout() {
+        this.clearToken();
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem('user');
+            window.location.href = '/auth/login';
+        }
     }
 
     // Vehicles

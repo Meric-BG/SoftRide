@@ -1,61 +1,81 @@
-const supabase = require('../config/supabase');
+const { get, run, query } = require('../config/db');
 
 class UserRepository {
 
     async findByEmail(email) {
-        const { data, error } = await supabase
-            .from('users')
-            .select('*')
-            .eq('email', email)
-            .single();
-
-        if (error && error.code !== 'PGRST116') throw error;
-        return data;
+        try {
+            return get('SELECT * FROM users WHERE email = ?', [email]);
+        } catch (error) {
+            console.error('Error in UserRepository.findByEmail:', error);
+            throw error;
+        }
     }
 
     async findById(id) {
-        // We use explicit join if needed, but vehicles!owner_id(*) is safer if RLS or ambiguity
-        const { data, error } = await supabase
-            .from('users')
-            .select('*, vehicles!owner_id(*)')
-            .eq('user_id', id)
-            .single();
+        try {
+            const user = get('SELECT * FROM users WHERE user_id = ?', [id]);
+            if (!user) return null;
 
-        if (error && error.code !== 'PGRST116') {
+            // Fetch vehicles for this user to match previous Supabase behavior
+            const vehicles = query('SELECT * FROM vehicles WHERE owner_id = ?', [id]);
+            return {
+                ...user,
+                vehicles: vehicles // Return all vehicles as an array
+            };
+        } catch (error) {
             console.error('Error in UserRepository.findById:', error);
-            // If the join fails because the relation is not recognized, try without it
-            const { data: userData, error: userError } = await supabase
-                .from('users')
-                .select('*')
-                .eq('user_id', id)
-                .single();
-            if (userError) throw userError;
-            return userData;
+            throw error;
         }
-        return data;
     }
 
     async update(id, updates) {
-        const { data, error } = await supabase
-            .from('users')
-            .update(updates)
-            .eq('user_id', id)
-            .select()
-            .single();
+        try {
+            const keys = Object.keys(updates);
+            if (keys.length === 0) return this.findById(id);
 
-        if (error) throw error;
-        return data;
+            const setClause = keys.map(key => `${key} = ?`).join(', ');
+            const values = Object.values(updates);
+
+            // Add updated_at
+            const now = new Date().toISOString();
+
+            run(`UPDATE users SET ${setClause}, updated_at = ? WHERE user_id = ?`, [...values, now, id]);
+
+            return this.findById(id);
+        } catch (error) {
+            console.error('Error in UserRepository.update:', error);
+            throw error;
+        }
+    }
+
+    async updatePhone(id, phoneNumber) {
+        return this.update(id, { phone_number: phoneNumber });
+    }
+
+    async updateEmail(id, email) {
+        const existing = await this.findByEmail(email);
+        if (existing && existing.user_id !== id) {
+            throw new Error('Cet email est déjà utilisé');
+        }
+        return this.update(id, { email });
     }
 
     async create(user) {
-        const { data, error } = await supabase
-            .from('users')
-            .insert([user])
-            .select()
-            .single();
+        try {
+            const columns = Object.keys(user);
+            const placeholders = columns.map(() => '?').join(', ');
+            const values = Object.values(user);
 
-        if (error) throw error;
-        return data;
+            const result = run(
+                `INSERT INTO users (${columns.join(', ')}) VALUES (${placeholders})`,
+                values
+            );
+
+            return this.findById(result.lastInsertRowid);
+        } catch (error) {
+            console.error('Error in UserRepository.create:', error);
+            throw error;
+        }
     }
 }
 

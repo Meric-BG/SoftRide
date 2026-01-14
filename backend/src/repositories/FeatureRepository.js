@@ -1,140 +1,126 @@
-const supabase = require('../config/supabase');
-
-const DEFAULT_FEATURES = [];
-
-// In-memory store for POC fallback persistence of features
-const featuresFallbackStore = [...DEFAULT_FEATURES];
+const { get, run, query } = require('../config/db');
 
 class FeatureRepository {
 
     async findAll() {
         try {
-            const { data, error } = await supabase
-                .from('features')
-                .select('*')
-                .eq('is_active', true)
-                .eq('is_visible', true);
-
-            if (error) {
-                console.warn('Supabase features fetch error:', error.message);
-                return featuresFallbackStore;
-            }
-
-            // Map database fields to application fields
-            const dbData = (data || []).map(f => ({
+            const data = query('SELECT * FROM features WHERE is_active = 1 AND is_visible = 1');
+            return data.map(f => ({
                 ...f,
-                base_price: f.base_price || f.price_amount || 0,
-                pricing_model: f.pricing_model || f.payment_type || 'SUBSCRIPTION'
+                base_price: f.price_amount || 0,
+                pricing_model: (f.payment_type || 'subscription').toLowerCase()
             }));
-
-            // Merge with fallback store, avoiding duplicates by feature_id
-            const allFeatures = [...dbData];
-            featuresFallbackStore.forEach(fall => {
-                if (!allFeatures.find(f => f.feature_id === fall.feature_id)) {
-                    allFeatures.push(fall);
-                }
-            });
-
-            return allFeatures;
         } catch (err) {
             console.error('FeatureRepository.findAll error:', err);
-            return featuresFallbackStore;
+            throw err;
         }
     }
 
     async findById(id) {
-        const { data, error } = await supabase
-            .from('features')
-            .select('*')
-            .eq('feature_id', id)
-            .single();
-
-        if (error && error.code !== 'PGRST116') {
-            const fallback = featuresFallbackStore.find(f => f.feature_id === id);
-            if (fallback) return fallback;
-            console.error('Feature not found in Supabase nor Fallback:', id);
+        try {
+            const feature = get('SELECT * FROM features WHERE feature_id = ?', [id]);
+            if (feature) {
+                return {
+                    ...feature,
+                    base_price: feature.price_amount || 0,
+                    pricing_model: (feature.payment_type || 'subscription').toLowerCase()
+                };
+            }
+            return null;
+        } catch (error) {
+            console.error('FeatureRepository.findById error:', error);
+            throw error;
         }
-
-        const feature = data || featuresFallbackStore.find(f => f.feature_id === id);
-        if (feature) {
-            return {
-                ...feature,
-                base_price: feature.base_price || feature.price_amount || 0,
-                pricing_model: feature.pricing_model || feature.payment_type || 'SUBSCRIPTION'
-            };
-        }
-        return null;
     }
 
     // Subscriptions logic
     async createSubscription(sub) {
-        const { data, error } = await supabase
-            .from('subscriptions')
-            .insert([sub])
-            .select()
-            .single();
+        try {
+            const columns = Object.keys(sub);
+            const placeholders = columns.map(() => '?').join(', ');
+            const values = Object.values(sub);
 
-        if (error) throw error;
-        return data;
+            const result = run(
+                `INSERT INTO subscriptions (${columns.join(', ')}) VALUES (${placeholders})`,
+                values
+            );
+
+            return get('SELECT * FROM subscriptions WHERE subscription_id = ?', [result.lastInsertRowid]);
+        } catch (error) {
+            console.error('Error in FeatureRepository.createSubscription:', error);
+            throw error;
+        }
     }
 
-    async findSubscriptionsByVehicle(vehicleId) {
-        const { data, error } = await supabase
-            .from('subscriptions')
-            .select('*')
-            .eq('vehicle_id', vehicleId);
-
-        if (error) throw error;
-        return data;
+    async findSubscriptionsByVehicle(vin) {
+        try {
+            return query('SELECT * FROM subscriptions WHERE vehicle_vin = ?', [vin]);
+        } catch (error) {
+            console.error('Error in FeatureRepository.findSubscriptionsByVehicle:', error);
+            throw error;
+        }
     }
 
     async findSubscriptionsByUser(userId) {
-        const { data, error } = await supabase
-            .from('subscriptions')
-            .select('*, features(*)')
-            .eq('user_id', userId);
+        try {
+            // Join with features to match previous Supabase behavior
+            const sql = `
+                SELECT s.*, f.name as feature_name, f.description as feature_description, f.price_amount as feature_price
+                FROM subscriptions s
+                JOIN features f ON s.feature_id = f.feature_id
+                WHERE s.user_id = ?
+            `;
+            const rows = query(sql, [userId]);
 
-        if (error) throw error;
-        return data;
+            // Format to match Supabase structure if needed
+            return rows.map(row => ({
+                ...row,
+                features: {
+                    name: row.feature_name,
+                    description: row.feature_description,
+                    price_amount: row.feature_price
+                }
+            }));
+        } catch (error) {
+            console.error('Error in FeatureRepository.findSubscriptionsByUser:', error);
+            throw error;
+        }
     }
 
     async createFeatureActivation(activation) {
-        const { data, error } = await supabase
-            .from('feature_activations')
-            .insert([activation])
-            .select()
-            .single();
+        try {
+            const columns = Object.keys(activation);
+            const placeholders = columns.map(() => '?').join(', ');
+            const values = Object.values(activation);
 
-        if (error) throw error;
-        return data;
+            run(
+                `INSERT INTO feature_activations (${columns.join(', ')}) VALUES (${placeholders})`,
+                values
+            );
+
+            return get('SELECT * FROM feature_activations WHERE activation_id = ?', [activation.activation_id]);
+        } catch (error) {
+            console.error('Error in FeatureRepository.createFeatureActivation:', error);
+            throw error;
+        }
     }
 
     async create(feature) {
-        // Map application fields to database fields if necessary for Supabase
-        const dbFeature = {
-            ...feature,
-            price_amount: feature.price_amount || feature.base_price,
-            payment_type: feature.payment_type || feature.pricing_model
-        };
+        try {
+            const columns = Object.keys(feature);
+            const placeholders = columns.map(() => '?').join(', ');
+            const values = Object.values(feature);
 
-        const { data, error } = await supabase
-            .from('features')
-            .insert([dbFeature])
-            .select()
-            .single();
+            run(
+                `INSERT INTO features (${columns.join(', ')}) VALUES (${placeholders})`,
+                values
+            );
 
-        if (error) {
-            console.error('Error creating feature:', error);
-            // Fallback for POC
-            console.warn('⚠️ Supabase Feature issue. Using fallback for POC.');
-            const fallbackFeature = {
-                ...feature,
-                created_at: feature.created_at || new Date().toISOString()
-            };
-            featuresFallbackStore.push(fallbackFeature);
-            return fallbackFeature;
+            return this.findById(feature.feature_id);
+        } catch (error) {
+            console.error('Error in FeatureRepository.create:', error);
+            throw error;
         }
-        return data;
     }
 }
 

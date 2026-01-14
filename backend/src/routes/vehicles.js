@@ -31,7 +31,7 @@ router.post('/:id/lock', authMiddleware, async (req, res) => {
         }
 
         const updated = await vehicleRepo.update(req.params.id, {
-            locked: locked !== undefined ? locked : !vehicle.locked
+            is_locked: locked !== undefined ? locked : !vehicle.is_locked
         });
 
         res.json({ success: true, vehicle: updated });
@@ -52,7 +52,7 @@ router.post('/:id/climate', authMiddleware, async (req, res) => {
         }
 
         const updated = await vehicleRepo.update(req.params.id, {
-            climate: climate !== undefined ? climate : !vehicle.climate
+            climate_state: climate !== undefined ? climate : !vehicle.climate_state
         });
 
         res.json({ success: true, vehicle: updated });
@@ -73,7 +73,7 @@ router.post('/:id/charge', authMiddleware, async (req, res) => {
         }
 
         const updated = await vehicleRepo.update(req.params.id, {
-            charging: charging !== undefined ? charging : !vehicle.charging
+            is_charging: charging !== undefined ? charging : !vehicle.is_charging
         });
 
         res.json({ success: true, vehicle: updated });

@@ -63,9 +63,7 @@ router.post('/install/:vehicleId/:campaignId', authMiddleware, async (req, res) 
 
         // Update vehicle OS version
         await vehicleRepo.update(vehicleId, {
-            // Note: osVersion doesn't exist in schema, using a custom field
-            // In production, you'd update the ECU firmware versions
-            last_connected: new Date().toISOString()
+            last_seen: new Date().toISOString()
         });
 
         res.json({
@@ -88,13 +86,14 @@ router.post('/deploy', authMiddleware, adminMiddleware, async (req, res) => {
             return res.status(400).json({ error: 'version et notes requis' });
         }
 
-        // For vehicle count, we could add a method or just skip for now
-        // const allVehicles = await vehicleRepo.findAll(); 
-        const allVehicles = []; // Simplified for this route
+        // Fetch all vehicles to count target fleet
+        const allVehicles = await vehicleRepo.findAll();
+        const targetCount = allVehicles.length;
 
         const campaign = {
             campaign_id: uuidv4(),
             campaign_name: `Update to ${version}`,
+            version,
             description: notes,
             campaign_type: 'SCHEDULED',
             priority: 3,
@@ -110,7 +109,7 @@ router.post('/deploy', authMiddleware, adminMiddleware, async (req, res) => {
         res.status(201).json({
             success: true,
             campaign: created,
-            message: `Mise à jour ${version} déployée vers ${targetVehicles || allVehicles.length} véhicules`
+            message: `Mise à jour ${version} déployée vers ${targetVehicles || targetCount} véhicules`
         });
     } catch (error) {
         console.error('Deploy update error:', error);

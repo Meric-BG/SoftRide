@@ -1,0 +1,28 @@
+
+> frontend@0.1.0 dev
+> next dev -p 3001
+
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3001
+
+ ✓ Starting...
+ ✓ Ready in 6.6s
+ ○ Compiling / ...
+ ✓ Compiled / in 1207ms (1320 modules)
+ ✓ Compiled /store in 463ms (1351 modules)
+ ○ Compiling /profile ...
+ ✓ Compiled /profile in 615ms (1369 modules)
+ ○ Compiling /updates ...
+ ✓ Compiled /updates in 558ms (1379 modules)
+ ✓ Compiled /_not-found in 357ms (1382 modules)
+ GET /updates 404 in 97ms
+ GET /_next/static/css/app/layout.css?v=1768403745385 404 in 79ms
+ GET /_next/static/chunks/main-app.js?v=1768403745385 404 in 107ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 106ms
+ GET /_next/static/chunks/app/layout.js 404 in 101ms
+ GET /updates 404 in 34ms
+ GET /_next/static/css/app/layout.css?v=1768403747394 404 in 44ms
+ GET /_next/static/chunks/main-app.js?v=1768403747394 404 in 55ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 53ms
+ GET /_next/static/chunks/app/layout.js 404 in 54ms
+[?25h
