@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useVehicle, DOMAINS } from './store/vehicleStore';
+import Cockpit from './components/Cockpit';
 
 function DomainNode({ domain, status, onClick, isSelected }) {
   const Icon = domain.icon;
@@ -61,7 +62,8 @@ const VehicleLayout = ({ activeDomainId }) => (
 
 export default function App() {
   const [selectedDomain, setSelectedDomain] = useState(null);
-
+  const [showCockpit, setShowCockpit] = useState(false);
+  const [toast, setToast] = useState(null);
   const {
     statuses,
     firmwares,
@@ -71,14 +73,68 @@ export default function App() {
     simulateFailure,
     setSimulateFailure,
     logs,
+    ecuFirmwares,
+    ecuHealth,
     startCampaign,
     handleUpdate,
-    ecuFirmwares,
-    ecuHealth
+    addLog
   } = useVehicle();
+
+  // Show global toast when a new log is added
+  React.useEffect(() => {
+    if (logs && logs.length > 0) {
+      const latestLog = logs[0];
+      const isRecent = (Date.now() - latestLog.id) < 2000;
+      if (isRecent) {
+        setToast(latestLog);
+        const timer = setTimeout(() => setToast(null), 3000);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [logs]);
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-200 p-8 font-sans selection:bg-blue-500/30">
+      <AnimatePresence>
+        {showCockpit && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className="fixed inset-0 z-50"
+          >
+            <Cockpit onClose={() => setShowCockpit(false)} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Global Toast Notification */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-8 left-1/2 -translate-x-1/2 z-[60] pointer-events-none"
+          >
+            <div className={`px-6 py-3 rounded-full flex items-center gap-3 shadow-[0_0_30px_rgba(0,0,0,0.5)] border backdrop-blur-md ${toast.type === 'error'
+              ? 'bg-red-900/90 border-red-500/30 text-red-50'
+              : toast.type === 'success'
+                ? 'bg-emerald-900/90 border-emerald-500/30 text-emerald-50'
+                : 'bg-slate-900/90 border-cyan-500/30 text-cyan-50'
+              }`}>
+              <div className={`h-2 w-2 rounded-full animate-pulse ${toast.type === 'error'
+                ? 'bg-red-500'
+                : toast.type === 'success'
+                  ? 'bg-emerald-400'
+                  : 'bg-cyan-400'
+                }`} />
+              <span className="text-sm font-medium">{toast.msg}</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <header className="max-w-7xl mx-auto mb-12 flex justify-between items-end">
         <div>
           <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-300 glow-text mb-2">
@@ -88,6 +144,16 @@ export default function App() {
             <Zap size={16} className="text-blue-400" />
             Centralized Zonal Controller Model v4.0.12
           </p>
+
+          <div className="mt-4">
+            <button
+              onClick={() => setShowCockpit(true)}
+              className="px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/50 text-cyan-400 text-xs font-bold uppercase tracking-wider hover:bg-cyan-500/20 transition-all flex items-center gap-2"
+            >
+              <Navigation size={12} />
+              Launch HMI Cockpit
+            </button>
+          </div>
         </div>
         <div className="glass-panel px-6 py-3 flex items-center gap-6 divide-x divide-slate-800">
           <div className="flex items-center gap-3">
@@ -165,25 +231,41 @@ export default function App() {
 
             <div className="mt-4 grid grid-cols-2 gap-2">
               <button
-                onClick={() => setVehicleState(prev => ({ ...prev, gear: prev.gear === 'P' ? 'D' : 'P' }))}
+                onClick={() => {
+                  const newGear = vehicleState.gear === 'P' ? 'D' : 'P';
+                  setVehicleState(prev => ({ ...prev, gear: newGear }));
+                  addLog(`Changement de mode : ${newGear === 'P' ? 'PARKING' : 'CONDUITE'} engagé.`, 'info');
+                }}
                 className="text-[10px] bg-slate-800 hover:bg-slate-700 px-3 py-1 rounded-lg text-slate-400 border border-slate-700 transition-colors"
               >
                 Gear: {vehicleState.gear === 'P' ? 'Park' : 'Drive'}
               </button>
               <button
-                onClick={() => setVehicleState(prev => ({ ...prev, battery: prev.battery > 20 ? 15 : 85 }))}
+                onClick={() => {
+                  const newBat = vehicleState.battery > 20 ? 15 : 85;
+                  setVehicleState(prev => ({ ...prev, battery: newBat }));
+                  addLog(newBat === 15 ? "SIMULATION : Niveau batterie critique (15%)" : "SIMULATION : Batterie rechargée (85%)", newBat === 15 ? 'error' : 'success');
+                }}
                 className="text-[10px] bg-slate-800 hover:bg-slate-700 px-3 py-1 rounded-lg text-slate-400 border border-slate-700 transition-colors"
               >
                 Bat: {vehicleState.battery}%
               </button>
               <button
-                onClick={() => setVehicleState(prev => ({ ...prev, connected: !prev.connected }))}
+                onClick={() => {
+                  const newStatus = !vehicleState.connected;
+                  setVehicleState(prev => ({ ...prev, connected: newStatus }));
+                  addLog(newStatus ? "RÉSEAU : Connexion rétablie." : "RÉSEAU : Connexion interrompue par la simulation.", newStatus ? 'success' : 'error');
+                }}
                 className={`text-[10px] px-3 py-1 rounded-lg border transition-colors ${vehicleState.connected ? 'bg-slate-800 text-slate-400 border-slate-700' : 'bg-red-900/40 text-red-400 border-red-800'}`}
               >
                 Network: {vehicleState.connected ? 'ON' : 'OFF'}
               </button>
               <button
-                onClick={() => setSimulateFailure(!simulateFailure)}
+                onClick={() => {
+                  const newFail = !simulateFailure;
+                  setSimulateFailure(newFail);
+                  addLog(newFail ? "CHAOS MONKEY : Mode échec activé. Erreurs aléatoires possibles." : "CHAOS MONKEY : Mode échec désactivé. Système stable.", 'warning');
+                }}
                 className={`text-[10px] px-3 py-1 rounded-lg border transition-colors ${!simulateFailure ? 'bg-slate-800 text-slate-400 border-slate-700' : 'bg-orange-900/40 text-orange-400 border-orange-800'}`}
               >
                 Fail Mode: {simulateFailure ? 'ACTIVE' : 'OFF'}
@@ -294,7 +376,7 @@ export default function App() {
               System Event Log
             </h3>
             <div className="space-y-3 font-mono text-[11px] max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-              {logs.map(log => (
+              {(logs || []).map(log => (
                 <div key={log.id} className="flex gap-3 text-slate-300">
                   <span className="text-slate-600">[{log.time}]</span>
                   <span className={`${log.type === 'error' ? 'text-red-400' : log.type === 'success' ? 'text-emerald-400' : 'text-blue-400/80'}`}>$</span>

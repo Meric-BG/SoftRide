@@ -91,7 +91,7 @@ export function VehicleProvider({ children }) {
         return initial;
     });
 
-    const [vehicleState, setVehicleState] = useState({ battery: 85, gear: 'P', connected: true });
+    const [vehicleState, setVehicleState] = useState({ battery: 85, gear: 'P', connected: true, speed: 0 });
 
     // NEW: ECU Health (DTCs and Memory)
     const [ecuHealth, setEcuHealth] = useState(() => {
@@ -110,9 +110,10 @@ export function VehicleProvider({ children }) {
 
     const [isCampaignRunning, setIsCampaignRunning] = useState(false);
     const [simulateFailure, setSimulateFailure] = useState(false);
+
     const [logs, setLogs] = useState([
-        { id: 'init', msg: 'Zonal architecture initialized.', time: new Date().toLocaleTimeString(), type: 'info' },
-        { id: 'check', msg: 'System health check: 100% operational.', time: new Date().toLocaleTimeString(), type: 'info' }
+        { id: 'init', msg: 'Architecture zonale initialisée avec succès.', time: new Date().toLocaleTimeString(), type: 'info' },
+        { id: 'check', msg: 'Santé système vérifiée : 100% opérationnel.', time: new Date().toLocaleTimeString(), type: 'info' }
     ]);
 
     // Use refs to access latest state in async functions without closures issues
@@ -124,7 +125,7 @@ export function VehicleProvider({ children }) {
     }, []);
 
     const runUpdateBatch = async (ids) => {
-        addLog(`Phase: Updating ${ids.join(' & ').toUpperCase()}...`);
+        addLog(`Phase : Mise à jour de ${ids.join(' & ').toUpperCase()} en cours...`);
         setStatuses(prev => {
             const next = { ...prev };
             ids.forEach(id => next[id] = 'updating');
@@ -134,16 +135,16 @@ export function VehicleProvider({ children }) {
         for (let i = 1; i <= 3; i++) {
             await new Promise(resolve => setTimeout(resolve, 1000));
             if (!stateRef.current.vehicleState.connected) {
-                addLog(`RESILIENCE: Network lost. Pausing ${ids.join('/')} update...`, "error");
+                addLog(`RÉSILIENCE : Connexion perdue. Pause de la mise à jour ${ids.join('/')}...`, "error");
                 while (!stateRef.current.vehicleState.connected) {
                     await new Promise(r => setTimeout(r, 1000));
                 }
-                addLog(`RESILIENCE: Connection restored. Resuming transfer...`, "success");
+                addLog(`RÉSILIENCE : Connexion rétablie. Reprise du transfert...`, "success");
             }
         }
 
         if (stateRef.current.simulateFailure && ids.includes('adas')) {
-            throw new Error("Integrity Check Failed on ADAS Domain");
+            throw new Error("Échec du contrôle d'intégrité sur le domaine ADAS");
         }
 
         setStatuses(prev => {
@@ -169,11 +170,11 @@ export function VehicleProvider({ children }) {
             return next;
         });
 
-        addLog(`Batch Completed: ${ids.join(', ')} and all internal ECUs verified.`);
+        addLog(`Batch terminé : ${ids.join(', ')} et tous les ECUs internes vérifiés.`);
     };
 
     const rollbackAll = async () => {
-        addLog("ROLLBACK: Reverting all domains & ECUs to stable versions...");
+        addLog("ROLLBACK : Restauration des versions stables pour tous les domaines...", "warning");
         await new Promise(resolve => setTimeout(resolve, 2000));
 
         setStatuses(DOMAINS.reduce((acc, d) => ({ ...acc, [d.id]: 'active' }), {}));
@@ -184,29 +185,29 @@ export function VehicleProvider({ children }) {
             return next;
         });
 
-        addLog("ROLLBACK COMPLETE: Vehicle state restored.", "success");
+        addLog("ROLLBACK TERMINÉ : État du véhicule restauré et sécurisé.", "success");
     };
 
     const startCampaign = async () => {
         if (vehicleState.battery < 30) {
-            addLog("CRITICAL: Battery too low for FOTA (< 30%). Campaign aborted.", "error");
+            addLog("CRITIQUE : Batterie trop faible pour FOTA (< 30%). Campagne annulée.", "error");
             return;
         }
         if (vehicleState.gear !== 'P') {
-            addLog("WARNING: Vehicle must be in PARK. Campaign blocked.", "error");
+            addLog("ATTENTION : Le véhicule doit être en mode PARKING. Campagne bloquée.", "error");
             return;
         }
 
         setIsCampaignRunning(true);
-        addLog("FOTA Campaign Started: Orchestrating Multi-ECU Update...");
+        addLog("Campagne FOTA démarrée : Orchestration de la mise à jour multi-ECU...");
 
         try {
             await runUpdateBatch(['chassis', 'powertrain']);
             await runUpdateBatch(['connectivity', 'adas']);
             await runUpdateBatch(['cockpit', 'services']);
-            addLog("SUCCESS: Full vehicle software suite updated to v2.5.0", "success");
+            addLog("SUCCÈS : Suite logicielle complète du véhicule mise à jour vers v2.5.0", "success");
         } catch (err) {
-            addLog(`FATAL ERROR: ${err.message}. Initiating Global Rollback...`, "error");
+            addLog(`ERREUR FATALE : ${err.message}. Lancement du Rollback Global...`, "error");
             await rollbackAll();
         } finally {
             setIsCampaignRunning(false);
@@ -216,11 +217,11 @@ export function VehicleProvider({ children }) {
     const handleUpdate = (id) => {
         if (statuses[id] === 'updating' || isCampaignRunning) return;
         setStatuses(prev => ({ ...prev, [id]: 'updating' }));
-        addLog(`Manual OTA request for ${id.toUpperCase()}...`);
+        addLog(`Requete OTA manuelle pour ${id.toUpperCase()}...`);
         setTimeout(() => {
             setFirmwares(prev => ({ ...prev, [id]: `v2.4.${Math.floor(Math.random() * 10) + 2}` }));
             setStatuses(prev => ({ ...prev, [id]: 'active' }));
-            addLog(`Update successful: ${id.toUpperCase()} is now current.`);
+            addLog(`Mise à jour réussie : Le module ${id.toUpperCase()} est maintenant à jour.`);
         }, 3000);
     };
 
