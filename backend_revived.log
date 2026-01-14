@@ -1,3 +1,5 @@
+[dotenv@17.2.3] injecting env (10) from backend/src/.env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+PRAGMA foreign_keys = ON
 -- Kemet SDV - SQLite Schema Init
 
 -- 1. USERS
@@ -14,9 +16,7 @@ CREATE TABLE IF NOT EXISTS users (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
-
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-
 -- 2. VEHICLES
 CREATE TABLE IF NOT EXISTS vehicles (
     vin TEXT PRIMARY KEY,
@@ -34,9 +34,7 @@ CREATE TABLE IF NOT EXISTS vehicles (
     last_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
-
 CREATE INDEX IF NOT EXISTS idx_vehicles_owner ON vehicles(owner_id);
-
 -- 3. FEATURES (Catalog)
 CREATE TABLE IF NOT EXISTS features (
     feature_id TEXT PRIMARY KEY,
@@ -51,7 +49,6 @@ CREATE TABLE IF NOT EXISTS features (
     image_url TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
-
 -- 4. SUBSCRIPTIONS (Purchases)
 CREATE TABLE IF NOT EXISTS subscriptions (
     subscription_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -65,11 +62,9 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
-
 CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON subscriptions(user_id);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_vehicle ON subscriptions(vehicle_vin);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);
-
 -- 5. FEATURE ACTIVATIONS
 CREATE TABLE IF NOT EXISTS feature_activations (
     activation_id TEXT PRIMARY KEY,
@@ -85,10 +80,8 @@ CREATE TABLE IF NOT EXISTS feature_activations (
     request_source TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
-
 CREATE INDEX IF NOT EXISTS idx_activations_vehicle ON feature_activations(vehicle_vin);
 CREATE INDEX IF NOT EXISTS idx_activations_subscription ON feature_activations(subscription_id);
-
 -- 6. PAYMENTS (For tracking payment transactions)
 CREATE TABLE IF NOT EXISTS payments (
     payment_id TEXT PRIMARY KEY,
@@ -104,10 +97,8 @@ CREATE TABLE IF NOT EXISTS payments (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
-
 CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id);
 CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
-
 -- 7. ANALYTICS VIEWS
 DROP VIEW IF EXISTS revenue_analytics_view;
 CREATE VIEW revenue_analytics_view AS
@@ -117,25 +108,21 @@ CREATE VIEW revenue_analytics_view AS
     FROM features f
     LEFT JOIN subscriptions s ON f.feature_id = s.feature_id AND s.status = 'active'
     GROUP BY f.feature_id, f.name, f.price_amount;
-
 DROP VIEW IF EXISTS vehicle_status_view;
 CREATE VIEW vehicle_status_view AS
     SELECT vin, model_name, 
            CASE WHEN last_seen > datetime('now', '-1 hour') THEN 'connected' ELSE 'offline' END as connectivity_status
     FROM vehicles;
-
 -- 8. SEED DATA
 -- Default Admin: admin@kemet.com / admin123
 INSERT OR IGNORE INTO users (email, password_hash, first_name, last_name, account_status, role) VALUES 
 ('admin@kemet.com', '$2b$10$gkQWPsEU8cYWUxdtuyC9PedDwWQEK9gR4c9MQHNxXz496bMD23k6.', 'Admin', 'Kemet', 'ACTIVE', 'admin');
-
 -- Default Features
 INSERT OR IGNORE INTO features (feature_id, name, description, price_amount, payment_type, billing_interval) VALUES 
 ('premium-connect', 'Connectivité Premium', 'Accès streaming, cartes satellite et navigation en temps réel', 2500, 'subscription', 'monthly'),
 ('acceleration-boost', 'Acceleration Boost', 'Réduction du 0-100 km/h de 4.4s à 3.9s', 1500000, 'one-time', NULL),
 ('sentry-mode', 'Mode Sentinelle', 'Sécurité active avec enregistrement vidéo 360°', 5000, 'subscription', 'monthly'),
 ('cold-weather-pack', 'Pack Hiver', 'Sièges et volant chauffants toutes places', 250000, 'one-time', NULL);
-
 -- 9. FOTA TABLES
 CREATE TABLE IF NOT EXISTS fota_campaigns (
     campaign_id TEXT PRIMARY KEY,
@@ -153,7 +140,6 @@ CREATE TABLE IF NOT EXISTS fota_campaigns (
     created_by INTEGER,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
-
 CREATE TABLE IF NOT EXISTS vehicle_updates (
     update_id INTEGER PRIMARY KEY AUTOINCREMENT,
     vehicle_vin TEXT REFERENCES vehicles(vin) ON DELETE CASCADE,
@@ -164,11 +150,9 @@ CREATE TABLE IF NOT EXISTS vehicle_updates (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
-
 -- Seed FOTA
 INSERT OR IGNORE INTO fota_campaigns (campaign_id, campaign_name, version, description, release_notes, size_mb, is_critical, status) VALUES 
 ('v1.1.0-release', 'Version 1.1.0', '1.1.0', 'Mise à jour de performance', 'Amélioration de la gestion batterie et nouvelles icônes.', 450, 0, 'COMPLETED');
-
 -- Service & Support Requests
 CREATE TABLE IF NOT EXISTS service_requests (
     request_id TEXT PRIMARY KEY,
@@ -184,9 +168,29 @@ CREATE TABLE IF NOT EXISTS service_requests (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
-
 -- Seed some initial requests for demo
 INSERT OR IGNORE INTO service_requests (request_id, user_id, type, subject, description, status, priority, ai_analysis)
 VALUES 
 ('req1', 1, 'BUG', 'Problème de charge', 'Ma voiture ne dépasse pas les 80% de charge sur les bornes rapides.', 'OPEN', 'HIGH', '{"solution": "Vérifier les limites de charge logicielle et l''état de santé des cellules (SOH). Une mise à jour du BMS pourrait être nécessaire."}'),
 ('req2', 1, 'FEATURE', 'Mode Sommeil', 'Serait-il possible d''ajouter un mode pour dormir dans la voiture avec la clim ?', 'IN_PROGRESS', 'MEDIUM', '{"solution": "Implémenter une boucle de contrôle thermique à faible bruit et désactiver les capteurs de mouvement internes pendant l''activation."}');
+✅ SQLite Database initialized successfully
+🔐 JWT Secret initialized: kemet...
+🤖 Kemet AI Service initialized | Provider: groq | Model: llama-3.3-70b-versatile | Key: gsk_7DztGB...
+
+╔═══════════════════════════════════════════════╗
+║                                               ║
+║        🚗 KEMET API Server                    ║
+║                                               ║
+║        Port: 5000                             ║
+║        Environment: development              ║
+║                                               ║
+║        Endpoints disponibles:                 ║
+║        • POST /api/auth/login                 ║
+║        • POST /api/auth/register              ║
+║        • GET  /api/vehicles/:id               ║
+║        • GET  /api/store/features             ║
+║        • GET  /api/updates                    ║
+║        • GET  /api/analytics/overview         ║
+║                                               ║
+╚═══════════════════════════════════════════════╝
+  

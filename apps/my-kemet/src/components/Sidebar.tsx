@@ -4,8 +4,6 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, Zap, ShoppingBag, Settings, User } from 'lucide-react';
-// We can import CSS modules if we had them, or rely on globals.css utilities
-// Since we used globals, we'll use inline styles + global classes
 
 const Sidebar = () => {
     const pathname = usePathname();
@@ -57,11 +55,8 @@ const Sidebar = () => {
                 <NavLinkItem href="/" icon={<Home size={20} />} label="Tableau de bord" />
                 <NavLinkItem href="/updates" icon={<Zap size={20} />} label="Mises à jour" />
                 <NavLinkItem href="/store" icon={<ShoppingBag size={20} />} label="Kemet Store" />
-            </div>
-
-            <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <NavLinkItem href="/requests" icon={<Home size={20} />} label="Support" />
                 <NavLinkItem href="/profile" icon={<User size={20} />} label="Profil" />
-                <NavLinkItem href="/settings" icon={<Settings size={20} />} label="Réglages" />
             </div>
         </nav>
     );

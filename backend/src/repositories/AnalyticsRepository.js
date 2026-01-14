@@ -1,21 +1,28 @@
-const { query } = require('../config/db');
+const { query, get } = require('../config/db');
 
 class AnalyticsRepository {
 
     async getOverview() {
         try {
-            const revenueResult = get('SELECT SUM(amount) as total FROM payments WHERE status = "PAID"');
+            const revenueResult = get("SELECT SUM(amount) as total FROM payments WHERE status = 'PAID'");
             const totalRevenue = revenueResult?.total || 0;
 
             const fleetData = query('SELECT * FROM vehicle_status_view');
             const totalFleet = fleetData.length;
             const activeFleet = fleetData.filter(v => v.connectivity_status === 'connected').length;
 
-            const subsResult = get('SELECT COUNT(*) as count FROM subscriptions WHERE status = "active"');
+            const subsResult = get("SELECT COUNT(*) as count FROM subscriptions WHERE status = 'active'");
             const totalSales = subsResult?.count || 0;
 
             // Group revenue by feature
+            console.log('📊 Analytics Debug: Querying revenue_analytics_view...');
             const featureRevenue = query('SELECT * FROM revenue_analytics_view');
+
+            console.log(`📊 Analytics Result: 
+                - Revenue: ${totalRevenue} 
+                - Fleet: ${totalFleet} (Active: ${activeFleet})
+                - Sales: ${totalSales}
+                - Features: ${featureRevenue.length}`);
 
             return {
                 revenue: {

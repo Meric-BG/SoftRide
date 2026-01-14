@@ -73,6 +73,7 @@ const Sidebar = () => {
                 <NavLink href="/updates" icon={<UploadCloud size={18} />} label="Mises à jour" />
                 <NavLink href="/store" icon={<ShoppingBag size={18} />} label="Kemet Store" />
                 <NavLink href="/fleet" icon={<Truck size={18} />} label="Flotte" />
+                <NavLink href="/requests" icon={<LayoutDashboard size={18} />} label="Requêtes" />
             </nav>
 
             <div style={{ paddingTop: '24px', borderTop: '1px solid var(--glass-border)' }}>

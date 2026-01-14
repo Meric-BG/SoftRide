@@ -13,8 +13,10 @@ const storeRoutes = require('./routes/store');
 const updatesRoutes = require('./routes/updates');
 const analyticsRoutes = require('./routes/analytics');
 const paymentRoutes = require('./routes/payment');
+const requestRoutes = require('./routes/requests');
 
 const app = express();
+app.set('trust proxy', true);
 const PORT = process.env.PORT || 5001;
 
 // Middleware
@@ -32,6 +34,7 @@ app.use('/api/store', storeRoutes);
 app.use('/api/updates', updatesRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/requests', requestRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

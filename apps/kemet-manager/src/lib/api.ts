@@ -1,5 +1,5 @@
 // API Client for Kemet Manager (Admin)
-// Connects to the backend API at http://localhost:5001
+// Connects to the backend API
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
 
@@ -26,7 +26,6 @@ class AdminAPIClient {
             localStorage.removeItem('admin_token');
         }
     }
-
 
     async request(endpoint: string, options: RequestInit = {}) {
         const headers: Record<string, string> = {
@@ -61,27 +60,13 @@ class AdminAPIClient {
     }
 
     // Analytics
-    async getOverview() {
-        return this.request('/analytics/overview');
-    }
+    async getOverview() { return this.request('/analytics/overview'); }
+    async getRevenue() { return this.request('/analytics/revenue'); }
+    async getFleet() { return this.request('/analytics/fleet'); }
+    async getTopSales() { return this.request('/analytics/top-sales'); }
 
-    async getRevenue() {
-        return this.request('/analytics/revenue');
-    }
-
-    async getFleet() {
-        return this.request('/analytics/fleet');
-    }
-
-    async getTopSales() {
-        return this.request('/analytics/top-sales');
-    }
-
-    // Updates/FOTA
-    async getAllUpdates() {
-        return this.request('/updates');
-    }
-
+    // FOTA
+    async getAllUpdates() { return this.request('/updates'); }
     async deployUpdate(version: string, notes: string, targetVehicles?: number) {
         return this.request('/updates/deploy', {
             method: 'POST',
@@ -89,17 +74,35 @@ class AdminAPIClient {
         });
     }
 
-    async getUpdateStats() {
-        return this.request('/updates/stats');
+    // Requests
+    async getAllRequests() { return this.request('/requests/all'); }
+    async updateRequest(id: string, status: string, notes: string) {
+        return this.request(`/requests/${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status, admin_notes: notes }),
+        });
     }
 
-    // Store
-    async getFeatures() {
-        return this.request('/store/features');
+    async transcribeVoice(audioBlob: Blob): Promise<{ text: string }> {
+        const formData = new FormData();
+        const extension = audioBlob.type.includes('webm') ? 'webm' :
+            audioBlob.type.includes('ogg') ? 'ogg' : 'wav';
+        formData.append('audio', audioBlob, `audio.${extension}`);
+
+        const response = await fetch(`${API_URL}/requests/whisper`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${this.token}` },
+            body: formData,
+        });
+
+        if (!response.ok) throw new Error('Transcription failed');
+        return response.json();
     }
 
-    async getPurchases() {
-        return this.request('/store/purchases');
+    async regenerateAIAnalysis(id: string) {
+        return this.request(`/requests/${id}/analyze`, {
+            method: 'POST',
+        });
     }
 }
 

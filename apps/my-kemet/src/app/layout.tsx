@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import "./globals.css";
 import Sidebar from "@/components/Sidebar";
+import AssistantView from "@/components/AssistantView";
 import { usePathname, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 
@@ -47,6 +48,7 @@ export default function RootLayout({
           {!isAuthPage && <Sidebar />}
           <main style={{ marginLeft: isAuthPage ? '0' : '240px', flex: 1, padding: isAuthPage ? '0' : '32px' }}>
             {children}
+            {!isAuthPage && <AssistantView />}
           </main>
         </div>
       </body>

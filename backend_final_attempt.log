@@ -1,0 +1,334 @@
+
+> softride-fota-poc@0.1.0 backend:dev
+> nodemon backend/src/server.js
+
+[33m[nodemon] 3.1.11[39m
+[33m[nodemon] to restart at any time, enter `rs`[39m
+[33m[nodemon] watching path(s): *.*[39m
+[33m[nodemon] watching extensions: js,mjs,cjs,json[39m
+[32m[nodemon] starting `node backend/src/server.js`[39m
+[dotenv@17.2.3] injecting env (10) from backend/src/.env -- tip: 📡 add observability to secrets: https://dotenvx.com/ops
+PRAGMA foreign_keys = ON
+-- Kemet SDV - SQLite Schema Init
+
+-- 1. USERS
+CREATE TABLE IF NOT EXISTS users (
+    user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    first_name TEXT,
+    last_name TEXT,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    phone_number TEXT,
+    account_status TEXT DEFAULT 'ACTIVE',
+    verified_email BOOLEAN DEFAULT 0,
+    role TEXT DEFAULT 'user',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+-- 2. VEHICLES
+CREATE TABLE IF NOT EXISTS vehicles (
+    vin TEXT PRIMARY KEY,
+    owner_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    brand_name TEXT,
+    model_name TEXT,
+    battery_level INTEGER DEFAULT 100,
+    range_km INTEGER DEFAULT 400,
+    os_version TEXT DEFAULT '1.0.0',
+    is_locked BOOLEAN DEFAULT 1,
+    is_charging BOOLEAN DEFAULT 0,
+    climate_state BOOLEAN DEFAULT 0,
+    location_name TEXT DEFAULT 'Dakar',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    last_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_vehicles_owner ON vehicles(owner_id);
+-- 3. FEATURES (Catalog)
+CREATE TABLE IF NOT EXISTS features (
+    feature_id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    price_amount DECIMAL(10, 2) NOT NULL,
+    currency TEXT DEFAULT 'FCFA',
+    payment_type TEXT, -- 'one-time', 'subscription'
+    billing_interval TEXT, -- 'monthly', null
+    is_active BOOLEAN DEFAULT 1,
+    is_visible BOOLEAN DEFAULT 1,
+    image_url TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+-- 4. SUBSCRIPTIONS (Purchases)
+CREATE TABLE IF NOT EXISTS subscriptions (
+    subscription_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    vehicle_vin TEXT REFERENCES vehicles(vin) ON DELETE CASCADE,
+    feature_id TEXT REFERENCES features(feature_id),
+    status TEXT DEFAULT 'active',
+    start_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    expires_at DATETIME,
+    auto_renew BOOLEAN DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_vehicle ON subscriptions(vehicle_vin);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);
+-- 5. FEATURE ACTIVATIONS
+CREATE TABLE IF NOT EXISTS feature_activations (
+    activation_id TEXT PRIMARY KEY,
+    subscription_id INTEGER REFERENCES subscriptions(subscription_id) ON DELETE CASCADE,
+    vehicle_vin TEXT REFERENCES vehicles(vin) ON DELETE CASCADE,
+    feature_id TEXT REFERENCES features(feature_id),
+    activation_status TEXT DEFAULT 'ACTIVE',
+    target_status TEXT DEFAULT 'ACTIVE',
+    activation_request_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    activation_start_time DATETIME,
+    activation_end_time DATETIME,
+    requested_by INTEGER REFERENCES users(user_id),
+    request_source TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_activations_vehicle ON feature_activations(vehicle_vin);
+CREATE INDEX IF NOT EXISTS idx_activations_subscription ON feature_activations(subscription_id);
+-- 6. PAYMENTS (For tracking payment transactions)
+CREATE TABLE IF NOT EXISTS payments (
+    payment_id TEXT PRIMARY KEY,
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    feature_id TEXT REFERENCES features(feature_id),
+    subscription_id INTEGER REFERENCES subscriptions(subscription_id),
+    operator TEXT, -- 'ORANGE', 'WAVE', etc.
+    phone_number TEXT,
+    amount DECIMAL(10, 2) NOT NULL,
+    currency TEXT DEFAULT 'FCFA',
+    status TEXT DEFAULT 'PENDING', -- 'PENDING', 'PAID', 'FAILED'
+    transaction_ref TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id);
+CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
+-- 7. ANALYTICS VIEWS
+DROP VIEW IF EXISTS revenue_analytics_view;
+CREATE VIEW revenue_analytics_view AS
+    SELECT f.feature_id, f.name, f.price_amount, 
+           COUNT(s.subscription_id) as active_subscriptions, 
+           (f.price_amount * COUNT(s.subscription_id)) as total_revenue
+    FROM features f
+    LEFT JOIN subscriptions s ON f.feature_id = s.feature_id AND s.status = 'active'
+    GROUP BY f.feature_id, f.name, f.price_amount;
+DROP VIEW IF EXISTS vehicle_status_view;
+CREATE VIEW vehicle_status_view AS
+    SELECT vin, model_name, 
+           CASE WHEN last_seen > datetime('now', '-1 hour') THEN 'connected' ELSE 'offline' END as connectivity_status
+    FROM vehicles;
+-- 8. SEED DATA
+-- Default Admin: admin@kemet.com / admin123
+INSERT OR IGNORE INTO users (email, password_hash, first_name, last_name, account_status, role) VALUES 
+('admin@kemet.com', '$2b$10$gkQWPsEU8cYWUxdtuyC9PedDwWQEK9gR4c9MQHNxXz496bMD23k6.', 'Admin', 'Kemet', 'ACTIVE', 'admin');
+-- Default Features
+INSERT OR IGNORE INTO features (feature_id, name, description, price_amount, payment_type, billing_interval) VALUES 
+('premium-connect', 'Connectivité Premium', 'Accès streaming, cartes satellite et navigation en temps réel', 2500, 'subscription', 'monthly'),
+('acceleration-boost', 'Acceleration Boost', 'Réduction du 0-100 km/h de 4.4s à 3.9s', 1500000, 'one-time', NULL),
+('sentry-mode', 'Mode Sentinelle', 'Sécurité active avec enregistrement vidéo 360°', 5000, 'subscription', 'monthly'),
+('cold-weather-pack', 'Pack Hiver', 'Sièges et volant chauffants toutes places', 250000, 'one-time', NULL);
+-- 9. FOTA TABLES
+CREATE TABLE IF NOT EXISTS fota_campaigns (
+    campaign_id TEXT PRIMARY KEY,
+    campaign_name TEXT NOT NULL,
+    version TEXT NOT NULL,
+    description TEXT,
+    release_notes TEXT,
+    campaign_type TEXT DEFAULT 'SCHEDULED',
+    priority INTEGER DEFAULT 3,
+    rollout_strategy TEXT DEFAULT 'PHASED',
+    scheduled_start DATETIME,
+    status TEXT DEFAULT 'available',
+    size_mb INTEGER,
+    is_critical BOOLEAN DEFAULT 0,
+    created_by INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS vehicle_updates (
+    update_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    vehicle_vin TEXT REFERENCES vehicles(vin) ON DELETE CASCADE,
+    campaign_id TEXT REFERENCES fota_campaigns(campaign_id),
+    status TEXT DEFAULT 'available', -- 'available', 'downloading', 'installing', 'completed', 'failed'
+    progress INTEGER DEFAULT 0,
+    installed_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+-- Seed FOTA
+INSERT OR IGNORE INTO fota_campaigns (campaign_id, campaign_name, version, description, release_notes, size_mb, is_critical, status) VALUES 
+('v1.1.0-release', 'Version 1.1.0', '1.1.0', 'Mise à jour de performance', 'Amélioration de la gestion batterie et nouvelles icônes.', 450, 0, 'COMPLETED');
+-- Service & Support Requests
+CREATE TABLE IF NOT EXISTS service_requests (
+    request_id TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    type TEXT NOT NULL, -- 'SUPPORT', 'SERVICE', 'FEATURE', 'BUG'
+    subject TEXT NOT NULL,
+    description TEXT NOT NULL,
+    status TEXT DEFAULT 'OPEN', -- 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'
+    priority TEXT DEFAULT 'MEDIUM', -- 'LOW', 'MEDIUM', 'HIGH', 'URGENT'
+    admin_notes TEXT,
+    ai_analysis TEXT, -- Stores AI proposed solutions for developers
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+-- Seed some initial requests for demo
+INSERT OR IGNORE INTO service_requests (request_id, user_id, type, subject, description, status, priority, ai_analysis)
+VALUES 
+('req1', 1, 'BUG', 'Problème de charge', 'Ma voiture ne dépasse pas les 80% de charge sur les bornes rapides.', 'OPEN', 'HIGH', '{"solution": "Vérifier les limites de charge logicielle et l''état de santé des cellules (SOH). Une mise à jour du BMS pourrait être nécessaire."}'),
+('req2', 1, 'FEATURE', 'Mode Sommeil', 'Serait-il possible d''ajouter un mode pour dormir dans la voiture avec la clim ?', 'IN_PROGRESS', 'MEDIUM', '{"solution": "Implémenter une boucle de contrôle thermique à faible bruit et désactiver les capteurs de mouvement internes pendant l''activation."}');
+✅ SQLite Database initialized successfully
+🔐 JWT Secret initialized: kemet...
+🤖 Kemet AI Service initialized | Provider: groq | Model: llama-3.3-70b-versatile | Key: gsk_7DztGB...
+
+╔═══════════════════════════════════════════════╗
+║                                               ║
+║        🚗 KEMET API Server                    ║
+║                                               ║
+║        Port: 5001                             ║
+║        Environment: development              ║
+║                                               ║
+║        Endpoints disponibles:                 ║
+║        • POST /api/auth/login                 ║
+║        • POST /api/auth/register              ║
+║        • GET  /api/vehicles/:id               ║
+║        • GET  /api/store/features             ║
+║        • GET  /api/updates                    ║
+║        • GET  /api/analytics/overview         ║
+║                                               ║
+╚═══════════════════════════════════════════════╝
+  
+SELECT * FROM users WHERE email = 'promisfangnon@gmail.com'
+SELECT * FROM users WHERE email = 'promisfangnon@gmail.com'
+SELECT * FROM users WHERE email = 'promisfangnon@gmail.com'
+SELECT * FROM users WHERE email = 'promisfangnon@gmail.com'
+SELECT * FROM users WHERE email = 'promisfangnon@gmail.com'
+SELECT * FROM users WHERE email = 'promisfangnon@gmail.com'
+SELECT * FROM users WHERE email = 'john@gmail.com'
+INSERT INTO users (email, password_hash, first_name, last_name, phone_number, account_status, verified_email) VALUES ('john@gmail.com', '$2b$10$HX0.yvJVP57HtRT8Zct01.2Iz'/*+28 bytes*/, 'Promi', '', '8488', 'ACTIVE', 0.0)
+SELECT * FROM users WHERE user_id = 119.0
+SELECT * FROM vehicles WHERE owner_id = 119.0
+INSERT INTO vehicles (vin, owner_id, brand_name, model_name, battery_level, range_km, os_version, location_name, is_locked) VALUES ('KMT-VIN-CE8A4A-MKEIW1MM-2026-AD', 119.0, 'Bachet', 'I', 100.0, 450.0, '1.0.0', 'Dakar', 1.0)
+SELECT * FROM vehicles WHERE vin = 'KMT-VIN-CE8A4A-MKEIW1MM-2026-AD'
+SELECT * FROM users WHERE user_id = 119.0
+SELECT * FROM vehicles WHERE owner_id = 119.0
+SELECT * FROM users WHERE user_id = 119.0
+SELECT * FROM vehicles WHERE owner_id = 119.0
+SELECT * FROM users WHERE user_id = 119.0
+SELECT * FROM vehicles WHERE owner_id = 119.0
+SELECT * FROM users WHERE user_id = 119.0
+SELECT * FROM vehicles WHERE owner_id = 119.0
+SELECT * FROM payments WHERE user_id = 119.0 ORDER BY created_at DESC
+SELECT * FROM payments WHERE user_id = 119.0 ORDER BY created_at DESC
+SELECT * FROM features WHERE is_active = 1 AND is_visible = 1
+SELECT * FROM features WHERE is_active = 1 AND is_visible = 1
+INSERT INTO payments (payment_id, user_id, feature_id, operator, phone_number, amount, status, created_at) VALUES ('80936dc0-66c9-4000-b12b-aa25dae5'/*+4 bytes*/, 119.0, 'f1768414673811', 'Moov', '5454', 554.0, 'PENDING', '2026-01-14T21:18:47.849Z')
+SELECT * FROM payments WHERE payment_id = '80936dc0-66c9-4000-b12b-aa25dae5'/*+4 bytes*/
+UPDATE payments SET status = 'PAID', updated_at = '2026-01-14T21:18:49.898Z' WHERE payment_id = '80936dc0-66c9-4000-b12b-aa25dae5'/*+4 bytes*/
+SELECT * FROM payments WHERE payment_id = '80936dc0-66c9-4000-b12b-aa25dae5'/*+4 bytes*/
+Payment 80936dc0-66c9-4000-b12b-aa25dae5c10a successful. Activating feature for user 119
+SELECT * FROM payments WHERE user_id = 119.0 ORDER BY created_at DESC
+SELECT * FROM users WHERE user_id = 119.0
+SELECT * FROM vehicles WHERE owner_id = 119.0
+SELECT * FROM features WHERE feature_id = 'f1768414673811'
+INSERT INTO subscriptions (user_id, vehicle_vin, feature_id, status, start_date, expires_at, auto_renew) VALUES (119.0, 'KMT-VIN-CE8A4A-MKEIW1MM-2026-AD', 'f1768414673811', 'active', '2026-01-14T21:18:49.926Z', '2026-02-13T21:18:49.926Z', 1.0)
+SELECT * FROM subscriptions WHERE subscription_id = 2.0
+UPDATE payments SET subscription_id = 2.0 WHERE payment_id = '80936dc0-66c9-4000-b12b-aa25dae5'/*+4 bytes*/
+INSERT INTO feature_activations (subscription_id, vehicle_vin, feature_id, activation_status, target_status, activation_request_time, activation_start_time, requested_by, request_source) VALUES (2.0, 'KMT-VIN-CE8A4A-MKEIW1MM-2026-AD', 'f1768414673811', 'ACTIVE', 'ACTIVE', '2026-01-14T21:18:49.971Z', '2026-01-14T21:18:49.971Z', 119.0, 'PAYMENT_PORTAL')
+SELECT * FROM feature_activations WHERE activation_id = NULL
+✅ Subscription and activation created for payment 80936dc0-66c9-4000-b12b-aa25dae5c10a
+SELECT * FROM service_requests WHERE user_id = 119.0 ORDER BY created_at DESC
+SELECT * FROM service_requests WHERE user_id = 119.0 ORDER BY created_at DESC
+📩 New request submission attempt by user 119
+INSERT INTO service_requests (request_id, user_id, type, subject, description, priority, status, ai_analysis, created_at) VALUES ('req-1768425544414', 119.0, 'SUPPORT', 'Boss', 'hj', 'MEDIUM', 'OPEN', '{
+  "solution": "Pour obtenir de'/*+279 bytes*/, '2026-01-14T21:19:04.414Z')
+SELECT * FROM service_requests WHERE request_id = 'req-1768425544414'
+✅ Request req-1768425544414 created successfully
+SELECT * FROM service_requests WHERE user_id = 119.0 ORDER BY created_at DESC
+🛡️ adminMiddleware check: UserID=admin1, Role=admin
+🧐 Admin admin1 (Role: admin) fetching all requests
+
+                SELECT r.*, u.first_name, u.last_name, u.email 
+                FROM service_requests r
+                LEFT JOIN users u ON r.user_id = u.user_id
+                ORDER BY r.created_at DESC
+            
+📊 Found 9 requests in database
+🛡️ adminMiddleware check: UserID=admin1, Role=admin
+🧐 Admin admin1 (Role: admin) fetching all requests
+
+                SELECT r.*, u.first_name, u.last_name, u.email 
+                FROM service_requests r
+                LEFT JOIN users u ON r.user_id = u.user_id
+                ORDER BY r.created_at DESC
+            
+📊 Found 9 requests in database
+🛡️ adminMiddleware check: UserID=admin1, Role=admin
+🧬 Starting AI Analysis Stream for request req-1768425544414
+SELECT * FROM service_requests WHERE request_id = 'req-1768425544414'
+🛡️ adminMiddleware check: UserID=admin1, Role=admin
+🧬 Starting AI Analysis Stream for request req-1768425544414
+SELECT * FROM service_requests WHERE request_id = 'req-1768425544414'
+🛡️ adminMiddleware check: UserID=admin1, Role=admin
+🧬 Starting AI Analysis Stream for request req-1768425544414
+SELECT * FROM service_requests WHERE request_id = 'req-1768425544414'
+SSE AI Stream error: Request failed with status code 429
+🛡️ adminMiddleware check: UserID=admin1, Role=admin
+📝 Admin admin1 updating request req-1768425544414
+UPDATE service_requests SET status = 'RESOLVED', admin_notes = 'hjkl', updated_at = '2026-01-14T21:19:19.360Z' WHERE request_id = 'req-1768425544414'
+SELECT * FROM service_requests WHERE request_id = 'req-1768425544414'
+🛡️ adminMiddleware check: UserID=admin1, Role=admin
+🧐 Admin admin1 (Role: admin) fetching all requests
+
+                SELECT r.*, u.first_name, u.last_name, u.email 
+                FROM service_requests r
+                LEFT JOIN users u ON r.user_id = u.user_id
+                ORDER BY r.created_at DESC
+            
+📊 Found 9 requests in database
+SELECT * FROM service_requests WHERE user_id = 119.0 ORDER BY created_at DESC
+SELECT * FROM service_requests WHERE user_id = 119.0 ORDER BY created_at DESC
+SELECT * FROM users WHERE user_id = 119.0
+SELECT * FROM vehicles WHERE owner_id = 119.0
+SELECT * FROM payments WHERE user_id = 119.0 ORDER BY created_at DESC
+SELECT * FROM users WHERE user_id = 119.0
+SELECT * FROM vehicles WHERE owner_id = 119.0
+SELECT * FROM payments WHERE user_id = 119.0 ORDER BY created_at DESC
+SELECT * FROM service_requests WHERE user_id = 119.0 ORDER BY created_at DESC
+SELECT * FROM service_requests WHERE user_id = 119.0 ORDER BY created_at DESC
+SELECT * FROM users WHERE user_id = 119.0
+SELECT * FROM vehicles WHERE owner_id = 119.0
+SELECT * FROM users WHERE user_id = 119.0
+SELECT * FROM vehicles WHERE owner_id = 119.0
+SELECT * FROM users WHERE user_id = 119.0
+SELECT * FROM vehicles WHERE owner_id = 119.0
+SELECT * FROM users WHERE user_id = 119.0
+SELECT * FROM vehicles WHERE owner_id = 119.0
+SELECT * FROM vehicles WHERE vin = 'KMT-VIN-CE8A4A-MKEIW1MM-2026-AD'
+SELECT * FROM fota_campaigns ORDER BY created_at DESC
+SELECT * FROM vehicles WHERE vin = 'KMT-VIN-CE8A4A-MKEIW1MM-2026-AD'
+SELECT * FROM fota_campaigns ORDER BY created_at DESC
+SELECT * FROM features WHERE is_active = 1 AND is_visible = 1
+SELECT * FROM features WHERE is_active = 1 AND is_visible = 1
+INSERT INTO features (feature_id, name, description, price_amount, payment_type, billing_interval, image_url, is_active, is_visible, created_at) VALUES ('f1768425655330', 'Nouveau airbag', 'chic', 554848.0, 'subscription', 'monthly', NULL, 1.0, 1.0, '2026-01-14T21:20:55.330Z')
+SELECT * FROM features WHERE feature_id = 'f1768425655330'
+SELECT * FROM features WHERE is_active = 1 AND is_visible = 1
+SELECT * FROM users WHERE user_id = 119.0
+SELECT * FROM vehicles WHERE owner_id = 119.0
+SELECT * FROM users WHERE user_id = 119.0
+SELECT * FROM vehicles WHERE owner_id = 119.0
+SELECT * FROM vehicles WHERE vin = 'KMT-VIN-CE8A4A-MKEIW1MM-2026-AD'
+SELECT * FROM fota_campaigns ORDER BY created_at DESC
+SELECT * FROM vehicles WHERE vin = 'KMT-VIN-CE8A4A-MKEIW1MM-2026-AD'
+SELECT * FROM fota_campaigns ORDER BY created_at DESC
+SELECT * FROM features WHERE is_active = 1 AND is_visible = 1
+SELECT * FROM features WHERE is_active = 1 AND is_visible = 1
+SELECT * FROM users WHERE user_id = 119.0
+SELECT * FROM vehicles WHERE owner_id = 119.0
+SELECT * FROM users WHERE user_id = 119.0
+SELECT * FROM vehicles WHERE owner_id = 119.0
