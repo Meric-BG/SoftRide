@@ -9,6 +9,7 @@ const vehicleRoutes = require('./routes/vehicles');
 const storeRoutes = require('./routes/store');
 const updatesRoutes = require('./routes/updates');
 const analyticsRoutes = require('./routes/analytics');
+const paymentsRoutes = require('./routes/payments');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -30,6 +31,7 @@ app.use('/api/vehicles', vehicleRoutes);
 app.use('/api/store', storeRoutes);
 app.use('/api/updates', updatesRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/payments', paymentsRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -352,6 +352,29 @@ class SupabaseDB {
         if (error) throw error;
         return data;
     }
+
+    async getTransactionById(transactionId) {
+        const { data, error } = await this.client
+            .from('transactions')
+            .select('*')
+            .eq('transaction_id', transactionId)
+            .single();
+
+        if (error && error.code !== 'PGRST116') throw error;
+        return data;
+    }
+
+    async updateTransaction(transactionId, updates) {
+        const { data, error } = await this.client
+            .from('transactions')
+            .update(updates)
+            .eq('transaction_id', transactionId)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
 }
 
 module.exports = new SupabaseDB();
