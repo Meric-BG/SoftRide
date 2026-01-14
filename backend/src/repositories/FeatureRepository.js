@@ -1,40 +1,6 @@
 const supabase = require('../config/supabase');
 
-const DEFAULT_FEATURES = [
-    {
-        feature_id: 'f1',
-        name: 'Mode Sentinelle',
-        description: 'Caméras et capteurs actifs pour une sécurité maximale.',
-        base_price: 5000,
-        pricing_model: 'SUBSCRIPTION',
-        currency: 'FCFA',
-        is_active: true,
-        is_visible: true,
-        created_at: new Date().toISOString()
-    },
-    {
-        feature_id: 'f2',
-        name: 'Boost Accélération',
-        description: 'Réduisez le 0-100 km/h de 0.5s.',
-        base_price: 1500000,
-        pricing_model: 'LIFETIME',
-        currency: 'FCFA',
-        is_active: true,
-        is_visible: true,
-        created_at: new Date().toISOString()
-    },
-    {
-        feature_id: 'f3',
-        name: 'Connectivité Premium',
-        description: 'Streaming musique, cartes satellite, et navigation live.',
-        base_price: 2500,
-        pricing_model: 'SUBSCRIPTION',
-        currency: 'FCFA',
-        is_active: true,
-        is_visible: true,
-        created_at: new Date().toISOString()
-    }
-];
+const DEFAULT_FEATURES = [];
 
 // In-memory store for POC fallback persistence of features
 const featuresFallbackStore = [...DEFAULT_FEATURES];
