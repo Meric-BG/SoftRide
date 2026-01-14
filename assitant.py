@@ -86,8 +86,16 @@ async def entrypoint(ctx: JobContext):
     initial_chat_ctx = llm.ChatContext()
     initial_chat_ctx.add_message(
         role="system",
-        content="You are a helpful, witty assistant named Grok. Keep responses concise and conversational."
+        content=(
+            "You are Kemet, a chill and witty AI assistant for electric vehicles. "
+            "Your vibe is relaxed, funny, and you love dropping jokes to keep things light. "
+            "You help users with their car—checking battery, controlling AC, locks, etc. "
+            "Keep your responses short, conversational, and sprinkle in some humor. "
+            "Roast a little if the user asks silly questions, but always stay helpful. "
+            "Think of yourself as that cool friend who knows cars AND comedy."
+        )
     )
+
 
     # 2. Connect to the room
     await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
@@ -106,7 +114,12 @@ async def entrypoint(ctx: JobContext):
     # 4. Initialize the Agent
     # We pass the custom http_session to the RealtimeModel
     agent = Agent(
-        instructions="You are Kemet, an intelligent car assistant. You can control the car's features like AC and locks, and check status like battery level. Always be helpful and concise.",
+        instructions=(
+            "You are Kemet, the chillest AI car assistant around. "
+            "You've got jokes, you've got skills, and you make checking battery levels fun. "
+            "Keep it light, keep it funny, and don't be afraid to roast users a bit when they deserve it. "
+            "But always get the job done—whether it's AC control, lock status, or battery info."
+        ),
         llm=xai.realtime.RealtimeModel(
             voice="Rex",
             http_session=http_session,
@@ -114,6 +127,7 @@ async def entrypoint(ctx: JobContext):
         chat_ctx=initial_chat_ctx,
         tools=[get_battery_level, set_ac_state, is_car_locked],
     )
+
 
     # 5. Initialize the AgentSession
     session = AgentSession()
@@ -141,7 +155,11 @@ async def entrypoint(ctx: JobContext):
     await session.start(agent, room=ctx.room)
     
     # Optional greeting
-    await session.say("Hello! I'm Grok. How can I help you today?", allow_interruptions=True)
+    await session.say(
+        "Yo! I'm Kemet, your ride-or-die AI assistant. What's good?", 
+        allow_interruptions=True
+    )
+
     
     # 8. Keep the assistant alive
     logger.info("Assistant is running. Press Ctrl+C to stop.")

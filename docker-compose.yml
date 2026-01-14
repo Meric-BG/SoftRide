@@ -1,0 +1,38 @@
+services:
+  kemet-assistant:
+    build: .
+    container_name: kemet-assistant
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - ENVIRONMENT=production
+      - LOG_LEVEL=INFO
+    # No ports needed - LiveKit handles WebRTC
+    # ports:
+    #   - "8080:8080"  # Uncomment if you add an HTTP API later
+
+    # Health check
+    healthcheck:
+      test: [ "CMD", "pgrep", "-f", "assitant.py" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+    # Resource limits (adjust based on your server)
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

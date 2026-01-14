@@ -1,0 +1,6 @@
+livekit-agents>=0.8.0
+livekit-plugins-xai
+livekit-plugins-silero
+python-dotenv>=1.0.0
+supabase>=2.0.0
+aiohttp>=3.9.0
