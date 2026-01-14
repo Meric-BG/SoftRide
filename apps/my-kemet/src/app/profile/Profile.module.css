@@ -1,0 +1,32 @@
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.profileGrid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 32px;
+}
+
+.vehicleGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+@media (max-width: 1024px) {
+    .profileGrid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .vehicleGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .profileHeader h1 {
+        font-size: 24px !important;
+    }
+}

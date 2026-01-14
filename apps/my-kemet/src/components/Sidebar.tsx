@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Zap, ShoppingBag, Settings, User } from 'lucide-react';
+import { Home, Zap, ShoppingBag, Settings, User, CreditCard, Headphones } from 'lucide-react';
 // We can import CSS modules if we had them, or rely on globals.css utilities
 // Since we used globals, we'll use inline styles + global classes
 
@@ -36,7 +36,7 @@ const Sidebar = () => {
     };
 
     return (
-        <nav className="glass-panel" style={{
+        <nav className="sidebar-desktop glass-panel" style={{
             width: '240px',
             padding: '24px',
             display: 'flex',
@@ -55,12 +55,14 @@ const Sidebar = () => {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <NavLinkItem href="/" icon={<Home size={20} />} label="Tableau de bord" />
-                <NavLinkItem href="/updates" icon={<Zap size={20} />} label="Mises à jour" />
                 <NavLinkItem href="/store" icon={<ShoppingBag size={20} />} label="Kemet Store" />
+                <NavLinkItem href="/my-features" icon={<Zap size={20} />} label="Mes fonctionnalités" />
+                <NavLinkItem href="/billing" icon={<CreditCard size={20} />} label="Facturation" />
             </div>
 
             <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <NavLinkItem href="/profile" icon={<User size={20} />} label="Profil" />
+                <NavLinkItem href="/support" icon={<Headphones size={20} />} label="Support" />
                 <NavLinkItem href="/settings" icon={<Settings size={20} />} label="Réglages" />
             </div>
         </nav>

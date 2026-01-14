@@ -1,30 +1,42 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google"; // Use Google Font instead of missing local files
+"use client";
+
+import { Inter } from "next/font/google";
 import "./globals.css";
 import Sidebar from "@/components/Sidebar";
+import { usePathname } from "next/navigation";
+import { AuthProvider } from "@/contexts/AuthContext";
+import AuthGuard from "@/components/AuthGuard";
 
 const inter = Inter({ subsets: ["latin"] });
-
-export const metadata: Metadata = {
-  title: "Kemet Manager",
-  description: "Admin Console for Kemet Vehicles",
-};
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const pathname = usePathname();
+  const isLoginPage = pathname === "/login";
+
   return (
     <html lang="fr">
       <body className={inter.className}>
-        <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-primary)' }}>
-          <Sidebar />
-          <main style={{ marginLeft: '260px', width: 'calc(100% - 260px)', padding: '40px' }}>
-            {children}
-          </main>
-        </div>
+        <AuthProvider>
+          <AuthGuard>
+            <div style={{ display: 'flex', minHeight: '100vh', position: 'relative' }}>
+              {!isLoginPage && <Sidebar />}
+              <main style={{
+                marginLeft: isLoginPage ? '0' : '260px',
+                width: isLoginPage ? '100%' : 'calc(100% - 260px)',
+                padding: isLoginPage ? '0' : '40px',
+                position: 'relative',
+                zIndex: 1
+              }}>
+                {children}
+              </main>
+            </div>
+          </AuthGuard>
+        </AuthProvider>
       </body>
-    </html>
+    </html >
   );
 }

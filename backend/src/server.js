@@ -22,7 +22,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Static files
-app.use(express.static(path.join(__dirname, '../../public')));
+// Legacy root public directory removed
 
 // API Routes
 app.use('/api/auth', authRoutes);

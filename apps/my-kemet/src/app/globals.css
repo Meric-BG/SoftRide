@@ -4,11 +4,12 @@
   --bg-primary: #050505;
   --bg-secondary: #0F0F0F;
   --bg-card: rgba(255, 255, 255, 0.05);
-  
-  --accent-primary: #1F4D3E; /* Dark Green from Reference */
+
+  --accent-primary: #1F4D3E;
+  /* Dark Green from Reference */
   --accent-glow: rgba(31, 77, 62, 0.5);
   --accent-white: #ffffff;
-  
+
   --text-primary: #FFFFFF;
   --text-secondary: #A0A0A0;
   --text-muted: #505050;
@@ -16,7 +17,7 @@
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-bg: rgba(20, 20, 20, 0.6);
   --backdrop-blur: 20px;
-  
+
   --radius-sm: 8px;
   --radius-md: 16px;
   --radius-lg: 24px;
@@ -49,6 +50,7 @@ body {
 .text-gradient {
   background: linear-gradient(135deg, #fff 0%, #a0a0a0 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -56,13 +58,56 @@ body {
 ::-webkit-scrollbar {
   width: 8px;
 }
+
 ::-webkit-scrollbar-track {
   background: var(--bg-primary);
 }
+
 ::-webkit-scrollbar-thumb {
   background: var(--bg-secondary);
   border-radius: 4px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: var(--accent-primary);
+}
+
+/* Responsive Utilities */
+.sidebar-desktop {
+  display: flex !important;
+}
+
+.mobile-nav {
+  display: none !important;
+}
+
+.mobile-header {
+  display: none !important;
+}
+
+.main-content {
+  margin-left: 240px;
+  flex: 1;
+  padding: 32px;
+  transition: all 0.3s ease;
+}
+
+@media (max-width: 1024px) {
+  .sidebar-desktop {
+    display: none !important;
+  }
+
+  .mobile-nav {
+    display: flex !important;
+  }
+
+  .mobile-header {
+    display: flex !important;
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+    padding: 80px 20px 100px 20px !important;
+    /* Added 80px top padding for mobile-header */
+  }
 }

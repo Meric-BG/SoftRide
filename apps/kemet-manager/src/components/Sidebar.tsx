@@ -3,17 +3,20 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 import {
     LayoutDashboard,
     UploadCloud,
     ShoppingBag,
-    Truck,
     Settings,
-    LogOut
+    LogOut,
+    Terminal,
+    Wrench
 } from 'lucide-react';
 
 const Sidebar = () => {
     const pathname = usePathname();
+    const { signOut } = useAuth();
 
     const NavLink = ({ href, icon, label }: { href: string, icon: React.ReactNode, label: string }) => {
         const isActive = pathname === href;
@@ -39,6 +42,14 @@ const Sidebar = () => {
                 {label}
             </Link>
         );
+    };
+
+    const handleSignOut = async () => {
+        try {
+            await signOut();
+        } catch (error) {
+            console.error('Erreur lors de la déconnexion:', error);
+        }
     };
 
     return (
@@ -72,27 +83,43 @@ const Sidebar = () => {
                 </div>
                 <NavLink href="/updates" icon={<UploadCloud size={18} />} label="Mises à jour" />
                 <NavLink href="/store" icon={<ShoppingBag size={18} />} label="Kemet Store" />
-                <NavLink href="/fleet" icon={<Truck size={18} />} label="Flotte" />
+                <NavLink href="/testing-sda" icon={<Terminal size={18} />} label="Testing SDA" />
+                <NavLink href="/maintenance" icon={<Wrench size={18} />} label="Maintenance" />
             </nav>
 
             <div style={{ paddingTop: '24px', borderTop: '1px solid var(--glass-border)' }}>
-                <NavLink href="/settings" icon={<Settings size={18} />} label="Paramètres" />
-                <div style={{ height: '8px' }}></div>
-                <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    padding: '12px 16px',
-                    color: 'var(--text-muted)',
-                    cursor: 'pointer',
-                    fontSize: '14px'
-                }}>
+                <button
+                    onClick={handleSignOut}
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        padding: '12px 16px',
+                        width: '100%',
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--text-muted)',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        borderRadius: 'var(--radius-sm)',
+                        transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                        e.currentTarget.style.color = '#EF4444';
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'transparent';
+                        e.currentTarget.style.color = 'var(--text-muted)';
+                    }}
+                >
                     <LogOut size={18} />
                     Déconnexion
-                </div>
+                </button>
             </div>
         </aside>
     );
 };
 
 export default Sidebar;
+

@@ -1,0 +1,305 @@
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.header {
+    margin-bottom: 40px;
+}
+
+.header h1 {
+    font-size: 32px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.header p {
+    color: var(--text-secondary);
+}
+
+.mainGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+}
+
+.sectionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.sectionTitle {
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.addButton {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    color: white;
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.addButton:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.cardList {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.cardItem {
+    padding: 20px;
+    border-radius: var(--radius-md);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.cardInfo {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.cardIconWrapper {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.cardDetails .cardMain {
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.defaultBadge {
+    font-size: 10px;
+    color: #10B981;
+    background: rgba(16, 185, 129, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.cardExpiry {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.deleteButton {
+    background: none;
+    border: none;
+    color: #505050;
+    cursor: pointer;
+    padding: 8px;
+    transition: color 0.2s;
+}
+
+.deleteButton:hover {
+    color: #ef4444;
+}
+
+.subscriptionCard {
+    padding: 24px;
+    border-radius: var(--radius-md);
+}
+
+.statusWrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.statusIcon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(16, 185, 129, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.summaryList {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.summaryRow {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+}
+
+.summaryLabel {
+    color: var(--text-secondary);
+}
+
+.divider {
+    height: 1px;
+    background: var(--glass-border);
+}
+
+.totalRow {
+    display: flex;
+    justify-content: space-between;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.totalAmount {
+    color: var(--accent-primary);
+}
+
+.historySection {
+    margin-top: 48px;
+}
+
+.tableWrapper {
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.historyTable {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 14px;
+}
+
+.historyTable thead {
+    background: rgba(255, 255, 255, 0.02);
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.historyTable th {
+    padding: 16px 24px;
+}
+
+.historyTable tr {
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.historyTable tr:last-child {
+    border-bottom: none;
+}
+
+.historyTable td {
+    padding: 16px 24px;
+}
+
+.statusBadge {
+    color: #10B981;
+    background: rgba(16, 185, 129, 0.1);
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.downloadButton {
+    color: var(--accent-primary);
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* Mobile Invoices (Hidden on desktop) */
+.mobileInvoices {
+    display: none;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.invoiceCard {
+    padding: 16px;
+    border-radius: var(--radius-md);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.invoiceHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.invoiceTitle {
+    font-weight: 600;
+    font-size: 15px;
+}
+
+.invoiceMeta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.invoiceFooter {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 12px;
+    border-top: 1px solid var(--glass-border);
+}
+
+/* Responsiveness */
+@media (max-width: 900px) {
+    .mainGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .tableWrapper {
+        display: none;
+    }
+
+    .mobileInvoices {
+        display: flex;
+    }
+}
+
+@media (max-width: 600px) {
+    .container {
+        padding: 16px;
+    }
+
+    .header h1 {
+        font-size: 26px;
+    }
+
+    .cardItem {
+        padding: 16px;
+    }
+
+    .cardInfo {
+        gap: 12px;
+    }
+
+    .totalRow {
+        font-size: 16px;
+    }
+}

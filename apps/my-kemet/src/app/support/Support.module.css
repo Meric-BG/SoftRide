@@ -1,0 +1,157 @@
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.header {
+    margin-bottom: 40px;
+    text-align: center;
+}
+
+.header h1 {
+    font-size: 32px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.header p {
+    color: var(--text-secondary);
+}
+
+.mainGrid {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 32px;
+    align-items: start;
+}
+
+.helpCenter {
+    padding: 32px;
+    border-radius: var(--radius-lg);
+}
+
+.helpCenter h2 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.searchWrapper {
+    position: relative;
+    margin-bottom: 24px;
+}
+
+.searchWrapper .searchIcon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+}
+
+.searchInput {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    padding: 12px 12px 12px 40px;
+    border-radius: var(--radius-sm);
+    color: white;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.searchInput:focus {
+    border-color: var(--accent-primary);
+}
+
+.faqList {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.faqItem {
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 12px;
+    border: 1px solid transparent;
+    transition: border-color 0.2s;
+}
+
+.faqItem:hover {
+    border-color: var(--glass-border);
+}
+
+.faqItem .question {
+    font-weight: 600;
+    font-size: 15px;
+    margin-bottom: 8px;
+}
+
+.faqItem .answer {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.contactCard {
+    padding: 40px 32px;
+    border-radius: var(--radius-lg);
+    text-align: center;
+    position: sticky;
+    top: 20px;
+}
+
+.contactCard h3 {
+    font-weight: 600;
+    margin-bottom: 12px;
+    font-size: 18px;
+}
+
+.contactCard p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+}
+
+.phoneNumber {
+    font-size: 22px;
+    font-weight: bold;
+    color: var(--accent-primary);
+}
+
+/* Responsiveness */
+@media (max-width: 900px) {
+    .mainGrid {
+        grid-template-columns: 1fr;
+        gap: 32px;
+    }
+
+    .contactCard {
+        position: static;
+        order: -1;
+    }
+}
+
+@media (max-width: 600px) {
+    .container {
+        padding: 16px;
+    }
+
+    .header h1 {
+        font-size: 26px;
+    }
+
+    .helpCenter,
+    .contactCard {
+        padding: 24px;
+    }
+
+    .phoneNumber {
+        font-size: 20px;
+    }
+}
