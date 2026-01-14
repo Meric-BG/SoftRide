@@ -221,4 +221,86 @@ async function handleFeatureActivation(transaction) {
     }
 }
 
+/**
+ * Mock Payment Page (For testing FedaPay redirect)
+ * GET /api/payments/fedapay/mock-page
+ */
+/**
+ * Mock Payment Page (For testing FedaPay redirect)
+ * GET /api/payments/fedapay/mock-page
+ */
+router.get('/fedapay/mock-page', (req, res) => {
+    const { token, amount, transactionId } = req.query;
+    const formattedAmount = parseInt(amount).toLocaleString('fr-FR');
+
+    res.send(`
+        <html>
+            <head>
+                <title>FedaPay Mock Payment</title>
+                <style>
+                    body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f0f2f5; }
+                    .card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; max-width: 400px; width: 100%; }
+                    .btn { background: #27ae60; color: white; border: none; padding: 12px 24px; border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 20px; width: 100%; transition: background 0.3s; }
+                    .btn:hover { background: #219150; }
+                    .details { background: #f8f9fa; padding: 15px; border-radius: 6px; margin: 20px 0; text-align: left; }
+                </style>
+            </head>
+            <body>
+                <div class="card">
+                    <h1 style="color: #2c3e50;">FedaPay <span style="font-size: 0.6em; background: #f1c40f; padding: 2px 6px; border-radius: 4px; color: #fff;">TEST</span></h1>
+                    <div class="details">
+                        <p><strong>Montant:</strong> ${formattedAmount} XOF</p>
+                        <p><strong>Référence:</strong> ${transactionId}</p>
+                    </div>
+                    
+                    <button id="confirmBtn" class="btn" onclick="confirmPayment()">Confirmer le paiement</button>
+                    
+                    <p style="margin-top: 20px; font-size: 12px; color: #666; line-height: 1.4;">
+                        Ceci est une simulation locale car aucune clé API FedaPay valide n'est configurée.
+                    </p>
+                </div>
+
+                <script>
+                    async function confirmPayment() {
+                        const btn = document.getElementById('confirmBtn');
+                        btn.disabled = true;
+                        btn.innerText = 'Traitement...';
+
+                        try {
+                            // Simulate Webhook Call
+                            const response = await fetch('/api/payments/fedapay/callback', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    name: 'transaction.approved',
+                                    entity: {
+                                        id: '${transactionId}' // This matches what we stored in DB as payment_gateway_transaction_id
+                                    }
+                                })
+                            });
+
+                            if (response.ok) {
+                                btn.style.background = '#2ecc71';
+                                btn.innerText = 'Succès ! Redirection...';
+                                setTimeout(() => {
+                                    window.location.href = 'http://localhost:3000/store?payment=success';
+                                }, 1000);
+                            } else {
+                                throw new Error('Erreur callback');
+                            }
+                        } catch (e) {
+                            console.error(e);
+                            btn.style.background = '#e74c3c';
+                            btn.innerText = 'Erreur lors de la confirmation';
+                            btn.disabled = false;
+                        }
+                    }
+                </script>
+            </body>
+        </html>
+    `);
+});
+
 module.exports = router;

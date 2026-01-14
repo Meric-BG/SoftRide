@@ -5,9 +5,16 @@ class FedaPayService {
         this.apiKey = process.env.FEDAPAY_SECRET_KEY || 'sk_sandbox_1234567890'; // Default for testing
         this.environment = process.env.FEDAPAY_ENVIRONMENT || 'sandbox';
 
-        // Configure FedaPay
-        FedaPay.setApiKey(this.apiKey);
-        FedaPay.setEnvironment(this.environment);
+        // Mock Mode Detection
+        this.mockMode = this.apiKey.includes('your_key_here') || this.apiKey === 'sk_sandbox_1234567890';
+
+        if (!this.mockMode) {
+            // Configure FedaPay
+            FedaPay.setApiKey(this.apiKey);
+            FedaPay.setEnvironment(this.environment);
+        } else {
+            console.log('⚠️ FedaPay Service running in MOCK MODE');
+        }
     }
 
     /**
@@ -16,6 +23,17 @@ class FedaPayService {
      * @returns {Promise<Object>} Token and URL
      */
     async createTransaction(data) {
+        if (this.mockMode) {
+            console.log('[MOCK] FedaPay Transaction Created:', data.amount, data.currency);
+            const mockToken = 'mock_token_' + Date.now();
+            const mockTxId = 'mock_tx_' + Date.now();
+            return {
+                token: mockToken,
+                url: `http://localhost:5000/api/payments/fedapay/mock-page?token=${mockToken}&amount=${data.amount}&transactionId=${mockTxId}`,
+                transactionId: mockTxId
+            };
+        }
+
         try {
             const transaction = await Transaction.create({
                 description: data.description,
@@ -51,6 +69,10 @@ class FedaPayService {
      * @param {string|number} transactionId 
      */
     async verifyTransaction(transactionId) {
+        if (this.mockMode) {
+            return { status: 'approved' };
+        }
+
         try {
             const transaction = await Transaction.retrieve(transactionId);
             return transaction;
