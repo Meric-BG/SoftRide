@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+@theme {
+  --color-sdv-blue: #0ea5e9;
+  --color-sdv-glow: #38bdf8;
+  --color-sdv-dark: #0f172a;
+
+  --animate-pulse-glow: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+
+  @keyframes pulse-glow {
+
+    0%,
+    100% {
+      opacity: 1;
+      filter: brightness(1);
+    }
+
+    50% {
+      opacity: .7;
+      filter: brightness(1.5);
+    }
+  }
+}
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background-color: #020617;
+  color: #f8fafc;
+  overflow-x: hidden;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.glass-panel {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+}
+
+.glow-text {
+  text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+}
+
+.network-line {
+  stroke-dasharray: 10;
+  animation: dash 5s linear infinite;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: -100;
+  }
+}
