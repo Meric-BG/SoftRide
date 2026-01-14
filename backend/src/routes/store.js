@@ -16,6 +16,36 @@ router.get('/features', async (req, res) => {
     }
 });
 
+// Add a feature (Admin)
+router.post('/features', async (req, res) => {
+    try {
+        const { name, description, price, pricing_model, image_url } = req.body;
+
+        if (!name || !price) {
+            return res.status(400).json({ error: 'Nom et prix requis' });
+        }
+
+        const newFeature = {
+            feature_id: 'f' + Date.now(),
+            name,
+            description,
+            base_price: price,
+            pricing_model: pricing_model || 'SUBSCRIPTION',
+            image_url,
+            currency: 'FCFA',
+            is_active: true,
+            is_visible: true,
+            created_at: new Date().toISOString()
+        };
+
+        const created = await featureRepo.create(newFeature);
+        res.status(201).json(created);
+    } catch (error) {
+        console.error('Create feature error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
 // Purchase a feature
 router.post('/purchase', authMiddleware, async (req, res) => {
     try {

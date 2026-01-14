@@ -9,15 +9,13 @@ const vehicleRoutes = require('./routes/vehicles');
 const storeRoutes = require('./routes/store');
 const updatesRoutes = require('./routes/updates');
 const analyticsRoutes = require('./routes/analytics');
+const paymentRoutes = require('./routes/payment');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
 
 // Middleware
-app.use(cors({
-    origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'],
-    credentials: true
-}));
+app.use(cors()); // Permissive for POC to avoid connection issues
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -30,6 +28,7 @@ app.use('/api/vehicles', vehicleRoutes);
 app.use('/api/store', storeRoutes);
 app.use('/api/updates', updatesRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/payments', paymentRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

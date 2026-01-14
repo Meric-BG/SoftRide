@@ -113,7 +113,9 @@ router.get('/me', authMiddleware, async (req, res) => {
             id: user.user_id,
             email: user.email,
             name: `${user.first_name} ${user.last_name}`,
-            role: user.email === 'admin@kemet.com' ? 'admin' : 'user'
+            phone_number: user.phone_number,
+            role: user.email === 'admin@kemet.com' ? 'admin' : 'user',
+            vehicles: user.vehicles && user.vehicles.length > 0 ? user.vehicles[0] : null
         });
     } catch (error) {
         console.error('Get user error:', error);
