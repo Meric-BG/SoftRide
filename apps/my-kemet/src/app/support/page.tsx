@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 import { Headphones, BookOpen, Search } from 'lucide-react';
 import styles from './Support.module.css';
 
@@ -47,11 +48,29 @@ export default function SupportPage() {
                 {/* Contact Section */}
                 <div className={`glass-panel ${styles.contactCard}`}>
                     <Headphones size={48} color="var(--accent-primary)" style={{ marginBottom: '16px' }} />
-                    <h3>Assistance Téléphonique</h3>
-                    <p>Disponible 24h/24 pour les urgences routières.</p>
-                    <div className={styles.phoneNumber}>+221 33 800 00 00</div>
+                    <h3>Assistance Directe</h3>
+                    <p>Vous ne trouvez pas de réponse ? Créez une demande d'assistance.</p>
+                    <Link href="/requests">
+                        <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            style={{
+                                width: '100%',
+                                padding: '14px',
+                                background: 'var(--accent-primary)',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: 'var(--radius-sm)',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                marginTop: '16px'
+                            }}
+                        >
+                            Créer une requête
+                        </motion.button>
+                    </Link>
                     <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid var(--glass-border)', fontSize: '13px', color: 'var(--text-secondary)' }}>
-                        Notre équipe est également disponible par email à support@kemet.sn
+                        Support téléphonique : +221 33 800 00 00
                     </div>
                 </div>
             </div>

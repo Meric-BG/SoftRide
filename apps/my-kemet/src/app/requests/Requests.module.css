@@ -1,0 +1,270 @@
+/* Main Container */
+.container {
+    padding: 40px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Header Section */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+}
+
+.title {
+    font-size: 32px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.subtitle {
+    color: var(--text-secondary);
+}
+
+.newRequestButton {
+    background: var(--accent-primary);
+    color: white;
+    border: none;
+    padding: 14px 28px;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Content Grid */
+.contentGrid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 32px;
+}
+
+.contentGrid.split {
+    grid-template-columns: 1fr 1fr;
+}
+
+/* Request Card */
+.requestCard {
+    padding: 28px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--glass-border);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.statusIndicator {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+}
+
+.cardHeader {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    align-items: center;
+}
+
+.statusBadge {
+    padding: 6px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.date {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.subject {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: white;
+}
+
+.description {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    line-height: 1.6;
+}
+
+/* Admin Response */
+.adminResponse {
+    padding: 20px;
+    background: rgba(16, 185, 129, 0.05);
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(16, 185, 129, 0.1);
+    margin-top: 8px;
+}
+
+.adminBadge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.adminIcon {
+    padding: 4px;
+    background: var(--accent-primary);
+    border-radius: 4px;
+}
+
+.adminLabel {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--accent-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Empty State */
+.emptyState {
+    padding: 60px;
+    text-align: center;
+    border-radius: var(--radius-md);
+}
+
+/* Form Panel */
+.formPanel {
+    padding: 40px;
+    border-radius: var(--radius-md);
+    align-self: start;
+    border: 1px solid var(--accent-primary);
+    box-shadow: 0 20px 40px rgba(16, 185, 129, 0.1);
+}
+
+.formHeader {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    align-items: center;
+}
+
+.closeButton {
+    background: rgba(255, 255, 255, 0.05);
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.formGroup {
+    margin-bottom: 24px;
+}
+
+.label {
+    display: block;
+    margin-bottom: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.input,
+.select,
+.textarea {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--glass-border);
+    padding: 14px;
+    border-radius: var(--radius-sm);
+    color: white;
+    font-size: 15px;
+}
+
+.textarea {
+    resize: none;
+    line-height: 1.6;
+}
+
+.submitButton {
+    background: var(--accent-primary);
+    color: white;
+    padding: 16px;
+    border-radius: var(--radius-sm);
+    border: none;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+/* Responsive Media Queries */
+@media (max-width: 1024px) {
+    .container {
+        padding: 24px;
+    }
+
+    .contentGrid.split {
+        grid-template-columns: 1fr;
+        /* Stack vertically on tablet/mobile */
+    }
+
+    .formPanel {
+        order: -1;
+        /* Show form on top when stacking */
+        margin-bottom: 32px;
+    }
+}
+
+@media (max-width: 768px) {
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .title {
+        font-size: 24px;
+    }
+
+    .newRequestButton {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .requestCard {
+        padding: 20px;
+    }
+
+    .cardHeader {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .formPanel {
+        padding: 24px;
+    }
+}

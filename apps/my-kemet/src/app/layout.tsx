@@ -8,6 +8,7 @@ import MobileHeader from "@/components/MobileHeader";
 import NotificationToast from "@/components/NotificationToast";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import AssistantView from "@/components/AssistantView";
 
 function LayoutContent({
   children,
@@ -43,6 +44,9 @@ function LayoutContent({
         {/* Allow /login, /register, and the root page (which will show LoginView if !user) without ProtectedRoute */}
         {isAuthPage || pathname === "/" || (!loading && !user) ? children : <ProtectedRoute>{children}</ProtectedRoute>}
       </main>
+
+      {/* Global Assistant Chatbot - Only show if logged in and not on auth pages */}
+      {showShell && <AssistantView />}
     </div>
   );
 }
@@ -59,15 +63,15 @@ export default function RootLayout({
         <meta name="theme-color" content="#1F4D3E" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <link rel="apple-touch-icon" href="/icon.png" />
+        {/* Unregister any previous Service Worker to avoid caching issues */}
         <script dangerouslySetInnerHTML={{
           __html: `
             if ('serviceWorker' in navigator) {
-              window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/sw.js').then(function(registration) {
-                  console.log('ServiceWorker registration successful');
-                }, function(err) {
-                  console.log('ServiceWorker registration failed: ', err);
-                });
+              navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) {
+                  registration.unregister();
+                  console.log('ServiceWorker unregistered');
+                }
               });
             }
           `

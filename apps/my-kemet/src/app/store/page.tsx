@@ -2,11 +2,20 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Zap, Wifi, Search, X, Check, ArrowRight, ArrowLeft, CreditCard, Clock, AlertTriangle } from 'lucide-react';
+import { Shield, Zap, Wifi, Search, X, Check, ArrowRight, ArrowLeft, CreditCard, Clock, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import styles from './Store.module.css';
 import { useAuth } from '@/contexts/AuthContext';
 
 import { supabase } from '@/lib/supabase';
+import Script from 'next/script';
+
+declare global {
+    interface Window {
+        FedaPay: any;
+    }
+}
 
 export default function Store() {
     const [products, setProducts] = useState<any[]>([]);
@@ -18,6 +27,9 @@ export default function Store() {
     const [selectedProduct, setSelectedProduct] = useState<any>(null);
     const [modalStep, setModalStep] = useState(1);
     const [frequency, setFrequency] = useState<'monthly' | 'annual' | null>(null);
+    const [fedaPayLoaded, setFedaPayLoaded] = useState(false);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const router = useRouter();
 
     const fetchProducts = async () => {
         setIsLoading(true);
@@ -128,14 +140,12 @@ export default function Store() {
         return selectedProduct.price_xof || 0;
     };
 
-    const handlePurchase = async () => {
-        if (!user || !selectedProduct) return;
-
+    const processBackendPurchase = async (productToBuy: any, amount: number) => {
         try {
             const { data: profile } = await supabase
                 .from('profiles')
                 .select('vim_linked')
-                .eq('id', user.id)
+                .eq('id', user!.id)
                 .single();
 
             if (!profile?.vim_linked) throw new Error("Aucun véhicule lié");
@@ -149,7 +159,7 @@ export default function Store() {
             if (!vehicle) throw new Error("Véhicule non trouvé");
 
             let expiresAt = null;
-            if (selectedProduct.price_annual_xof > 0) {
+            if (productToBuy.price_annual_xof > 0) {
                 const date = new Date();
                 if (frequency === 'annual') {
                     date.setFullYear(date.getFullYear() + 1);
@@ -163,7 +173,7 @@ export default function Store() {
                 .from('vehicle_features')
                 .upsert({
                     vehicle_id: vehicle.id,
-                    feature_id: selectedProduct.id,
+                    feature_id: productToBuy.id,
                     expires_at: expiresAt,
                     installed_at: new Date().toISOString()
                 }, { onConflict: 'vehicle_id,feature_id' });
@@ -172,23 +182,80 @@ export default function Store() {
 
             // Log Transaction
             await supabase.from('transactions').insert({
-                user_id: user.id,
+                user_id: user!.id,
                 type: 'FEATURE_ACTIVATION',
-                amount_xof: getPrice(),
-                item_id: selectedProduct.id
+                amount_xof: amount,
+                item_id: productToBuy.id,
+                status: 'COMPLETED',
+                provider: 'FEDAPAY'
             });
 
-            alert('Félicitations ! Votre fonctionnalité est activée.');
+            // Close purchase modal and show success modal
             handleCloseModal();
             fetchPurchasedFeatures();
+            alert('Backend mis à jour. Affichage modal succès.'); // DEBUG
+            setShowSuccessModal(true);
         } catch (err: any) {
-            console.error('Erreur achat:', err);
-            alert('Erreur: ' + err.message);
+            console.error('Erreur activation:', err);
+            alert('Erreur activation: ' + err.message);
+        }
+    };
+
+    const handlePurchase = async () => {
+        if (!user || !selectedProduct) return;
+
+        // FedaPay Integration
+        if (!fedaPayLoaded || !window.FedaPay) {
+            alert("Le module de paiement n'est pas encore prêt. Réessayez dans un instant.");
+            return;
+        }
+
+        const price = getPrice();
+        if (price === 0) {
+            // Free or Trial
+            processBackendPurchase(selectedProduct, 0);
+            return;
+        }
+
+        try {
+            const widget = window.FedaPay.init({
+                public_key: 'pk_sandbox__pBaqK4vGU-r9AXavI3-aAds',
+                transaction: {
+                    amount: price,
+                    description: `Achat Kemet Store: ${selectedProduct.name}`
+                },
+                customer: {
+                    email: user.email || 'client@kemet.com',
+                    lastname: user.user_metadata?.name?.split(' ')[1] || 'Kemet',
+                    firstname: user.user_metadata?.name?.split(' ')[0] || 'User'
+                },
+                on_complete: (data: any) => {
+                    console.log('FedaPay result:', data);
+                    alert('Callback FedaPay reçu : ' + data.reason); // DEBUG
+                    if (data.reason === 'CHECKOUT_COMPLETE') {
+                        // Payment success, activate feature
+                        alert('Paiement validé par FedaPay. Activation en cours...'); // DEBUG
+                        processBackendPurchase(selectedProduct, price);
+                    } else {
+                        console.log('Paiement non complété ou annulé');
+                        alert('Paiement non complété : ' + data.reason); // DEBUG
+                    }
+                }
+            });
+            widget.open();
+        } catch (error: any) {
+            console.error("Erreur FedaPay:", error);
+            alert("Erreur lors de l'initialisation du paiement: " + error.message);
         }
     };
 
     return (
         <div className={styles.container}>
+            <Script
+                src="https://checkout.fedapay.com/js/checkout.js"
+                onLoad={() => setFedaPayLoaded(true)}
+            />
+
             <header className={styles.header}>
                 <div>
                     <h1 style={{ fontSize: '32px', fontWeight: 'bold' }}>Kemet Store</h1>
@@ -260,7 +327,7 @@ export default function Store() {
                             status={status}
                             daysRemaining={daysRemaining}
                             onSubscribe={() => { setSelectedProduct(product); setModalStep(1); }}
-                            onPurchase={handlePurchase}
+                            onPurchase={() => { setSelectedProduct(product); setModalStep(2); }}
                         />
                     );
                 })}
@@ -328,8 +395,8 @@ export default function Store() {
                                 <div className={styles.paymentMethods}>
                                     <div className={styles.paymentOption} onClick={handlePurchase}>
                                         <div>
-                                            <div style={{ fontWeight: 600 }}>Paiement Intégral</div>
-                                            <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Réglez {getPrice().toLocaleString('fr-FR')} FCFA en une fois</div>
+                                            <div style={{ fontWeight: 600 }}>Paiement Intégral (FedaPay)</div>
+                                            <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Réglez {getPrice().toLocaleString('fr-FR')} FCFA maintenant</div>
                                         </div>
                                         <ArrowRight size={18} color="var(--accent-primary)" />
                                     </div>
@@ -356,11 +423,55 @@ export default function Store() {
                                     <div style={{ marginTop: '16px', padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-sm)', display: 'flex', gap: '10px', alignItems: 'start' }}>
                                         <CreditCard size={16} style={{ marginTop: '2px', color: 'var(--text-secondary)' }} />
                                         <p style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-                                            Le paiement fractionné est sans frais supplémentaires. Votre carte sera débitée automatiquement selon l'échéancier choisi.
+                                            Le paiement est sécurisé par FedaPay. Votre carte ou compte mobile money sera débité du montant indiqué.
                                         </p>
                                     </div>
                                 </div>
                             )}
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Success Modal */}
+            <AnimatePresence>
+                {showSuccessModal && (
+                    <div className={styles.modalOverlay} onClick={() => setShowSuccessModal(false)}>
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className={`glass-panel ${styles.modalContent}`}
+                            style={{ textAlign: 'center', padding: '40px' }}
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div style={{
+                                width: '80px', height: '80px', background: 'rgba(16, 185, 129, 0.1)',
+                                borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                margin: '0 auto 24px'
+                            }}>
+                                <CheckCircle2 size={40} color="#10B981" />
+                            </div>
+
+                            <h3 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '12px' }}>Paiement Reçu !</h3>
+                            <p style={{ color: 'var(--text-secondary)', marginBottom: '32px', lineHeight: '1.5' }}>
+                                Votre achat a été validé avec succès.<br />La fonctionnalité est maintenant active sur votre véhicule.
+                            </p>
+
+                            <div style={{ display: 'grid', gap: '12px' }}>
+                                <Link href="/my-features"
+                                    className={styles.primaryButton}
+                                    style={{ textAlign: 'center', textDecoration: 'none', display: 'block' }}
+                                >
+                                    Voir mes fonctionnalités
+                                </Link>
+                                <button
+                                    className={styles.secondaryButton}
+                                    onClick={() => setShowSuccessModal(false)}
+                                >
+                                    Retour à la boutique
+                                </button>
+                            </div>
                         </motion.div>
                     </div>
                 )}

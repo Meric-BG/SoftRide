@@ -102,7 +102,7 @@ export default function RegisterPage() {
 
                     <form onSubmit={handleRegister} className="login-form">
                         <div className="input-field">
-                            <User className="icon" size={20} />
+                            <User className="icon" size={18} />
                             <input
                                 type="text"
                                 required
@@ -113,7 +113,7 @@ export default function RegisterPage() {
                         </div>
 
                         <div className="input-field">
-                            <Car className="icon" size={20} />
+                            <Car className="icon" size={18} />
                             <input
                                 type="text"
                                 required
@@ -124,7 +124,7 @@ export default function RegisterPage() {
                         </div>
 
                         <div className="input-field">
-                            <Mail className="icon" size={20} />
+                            <Mail className="icon" size={18} />
                             <input
                                 type="email"
                                 required
@@ -135,7 +135,7 @@ export default function RegisterPage() {
                         </div>
 
                         <div className="input-field">
-                            <Lock className="icon" size={20} />
+                            <Lock className="icon" size={18} />
                             <input
                                 type="password"
                                 required
@@ -150,8 +150,8 @@ export default function RegisterPage() {
                                 <div className="loader" />
                             ) : (
                                 <>
-                                    Créer mon compte
-                                    <ArrowRight size={20} />
+                                    S'inscrire
+                                    <ArrowRight size={18} />
                                 </>
                             )}
                         </button>
@@ -188,50 +188,106 @@ export default function RegisterPage() {
           filter: blur(120px);
         }
 
-        .login-container { position: relative; z-index: 10; width: 100%; max-width: 480px; padding: 40px; }
+        .login-container { 
+          position: relative; 
+          z-index: 10; 
+          width: 100%; 
+          max-width: 440px; 
+          padding: 24px;
+          display: flex;
+          justify-content: center;
+        }
 
         .login-content {
+          width: 100%;
           background: rgba(10, 10, 10, 0.4);
           backdrop-filter: blur(40px);
           border: 1px solid rgba(255, 255, 255, 0.05);
-          border-radius: 40px;
-          padding: 60px 48px;
+          border-radius: 32px;
+          padding: 52px 40px;
           box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8);
           text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
         }
 
-        .brand-logo { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 32px; }
-        .brand-logo img { height: 32px; width: auto; }
-        .brand-name { font-size: 14px; font-weight: 800; letter-spacing: 4px; color: white; opacity: 0.8; }
+        .brand-logo { 
+          display: flex; 
+          align-items: center; 
+          justify-content: center; 
+          gap: 12px; 
+          margin-bottom: 24px;
+          width: 100%;
+        }
+        .brand-logo img { height: 28px; width: auto; }
+        .brand-name { font-size: 13px; font-weight: 800; letter-spacing: 4px; color: white; opacity: 0.8; }
 
-        .header-text h1 { font-size: 32px; font-weight: 800; color: white; line-height: 1.1; margin-bottom: 12px; letter-spacing: -1.5px; }
+        .header-text { width: 100%; }
+        .header-text h1 { font-size: 28px; font-weight: 800; color: white; line-height: 1.1; margin-bottom: 12px; letter-spacing: -1px; }
         .header-text h1 span { color: #1F6F5C; }
-        .header-text p { color: #787878; font-size: 15px; margin-bottom: 40px; }
+        .header-text p { color: #787878; font-size: 14px; margin-bottom: 32px; }
 
-        .error-box { background: rgba(239, 68, 68, 0.1); color: #EF4444; padding: 12px; border-radius: 12px; margin-bottom: 24px; font-size: 14px; }
+        .error-box { 
+          width: 100%;
+          background: rgba(239, 68, 68, 0.1); 
+          color: #EF4444; 
+          padding: 12px; 
+          border-radius: 12px; 
+          margin-bottom: 24px; 
+          font-size: 14px; 
+          text-align: left;
+        }
 
-        .login-form { display: flex; flex-direction: column; gap: 16px; }
+        .login-form { 
+          display: flex; 
+          flex-direction: column; 
+          gap: 14px; 
+          width: 100%;
+        }
 
         .input-field {
-          position: relative; display: flex; align-items: center;
-          background: rgba(255, 255, 255, 0.03);
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          border-radius: 18px;
-          padding: 0 24px;
-          height: 60px;
-          transition: all 0.4s;
+          position: relative; 
+          display: flex; 
+          align-items: center;
+          background: #0A0A0A;
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          border-radius: 14px;
+          padding: 0 18px;
+          height: 56px;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          width: 100%;
         }
-        .input-field:focus-within { border-color: #1F6F5C; background: rgba(255, 255, 255, 0.05); }
-        .icon { color: #404040; margin-right: 16px; }
-        .input-field:focus-within .icon { color: #1F6F5C; }
+        .input-field:focus-within { 
+          border-color: rgba(31, 111, 92, 0.5); 
+          background: #0F0F0F;
+          box-shadow: 0 0 0 4px rgba(31, 111, 92, 0.1);
+        }
+        .icon { 
+          color: #666; 
+          margin-right: 14px; 
+          transition: all 0.3s;
+        }
+        .input-field:focus-within .icon { color: #1F6F5C; transform: scale(1.1); }
 
         .input-field input { flex: 1; background: transparent; border: none; outline: none; color: white; font-size: 15px; }
         
         .login-button {
-          height: 60px; background: #FFF; color: #000; border: none; border-radius: 18px;
-          font-size: 16px; font-weight: 800; cursor: pointer;
-          display: flex; align-items: center; justify-content: center; gap: 12px;
-          transition: all 0.3s; margin-top: 12px;
+          height: 56px; 
+          background: #FFF; 
+          color: #000; 
+          border: none; 
+          border-radius: 14px;
+          font-size: 15px; 
+          font-weight: 700; 
+          cursor: pointer;
+          display: flex; 
+          align-items: center; 
+          justify-content: center; 
+          gap: 10px;
+          transition: all 0.3s; 
+          margin-top: 12px;
+          width: 100%;
         }
         .login-button:hover { background: #E0E0E0; transform: translateY(-2px); }
         .login-button:disabled { opacity: 0.6; }

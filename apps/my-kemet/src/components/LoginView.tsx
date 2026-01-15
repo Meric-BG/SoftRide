@@ -8,93 +8,93 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 
 export default function LoginView() {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const router = useRouter();
-    const { user, loading } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const { user, loading } = useAuth();
 
-    const handleLogin = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsLoading(true);
-        setError(null);
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
 
-        try {
-            const { error } = await supabase.auth.signInWithPassword({
-                email,
-                password,
-            });
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-            if (error) throw error;
+      if (error) throw error;
 
-            // router.push('/') logic is handled by the parent or useEffect in Login page
-        } catch (err: any) {
-            setError(err.message || 'Erreur lors de la connexion');
-            setIsLoading(false);
-        }
-    };
+      // router.push('/') logic is handled by the parent or useEffect in Login page
+    } catch (err: any) {
+      setError(err.message || 'Erreur lors de la connexion');
+      setIsLoading(false);
+    }
+  };
 
-    return (
-        <div className="login-page">
-            <div className="login-card">
-                <header className="login-header">
-                    <img src="/logo.png" alt="Kemet" className="main-logo" />
-                    <h1>MY KEMET</h1>
-                    <p>Connectez-vous à votre espace personnel.</p>
-                </header>
+  return (
+    <div className="login-page">
+      <div className="login-card">
+        <header className="login-header">
+          <img src="/logo.png" alt="Kemet" className="main-logo" />
+          <h1>MY KEMET</h1>
+          <p>Connectez-vous à votre espace personnel.</p>
+        </header>
 
-                {error && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="error-banner"
-                    >
-                        <AlertCircle size={18} />
-                        <span>{error}</span>
-                    </motion.div>
-                )}
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="error-banner"
+          >
+            <AlertCircle size={18} />
+            <span>{error}</span>
+          </motion.div>
+        )}
 
-                <form onSubmit={handleLogin} className="login-form">
-                    <div className="field-group">
-                        <div className="input-box">
-                            <Mail className="field-icon" size={18} />
-                            <input
-                                type="email"
-                                required
-                                placeholder="Adresse email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="field-group">
-                        <div className="input-box">
-                            <Lock className="field-icon" size={18} />
-                            <input
-                                type="password"
-                                required
-                                placeholder="Mot de passe"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                            />
-                        </div>
-                    </div>
-
-                    <button type="submit" className="login-btn" disabled={isLoading}>
-                        {isLoading ? <span className="spinner" /> : <>Se connecter <ArrowRight size={18} /></>}
-                    </button>
-                </form>
-
-                <footer className="login-footer">
-                    <a href="#">Mot de passe oublié ?</a>
-                    <div className="divider" />
-                    <p>Pas de compte ? <a href="/register" className="signup">S'inscrire</a></p>
-                </footer>
+        <form onSubmit={handleLogin} className="login-form">
+          <div className="field-group">
+            <div className="input-box">
+              <Mail className="field-icon" size={18} />
+              <input
+                type="email"
+                required
+                placeholder="Adresse email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
             </div>
+          </div>
 
-            <style jsx>{`
+          <div className="field-group">
+            <div className="input-box">
+              <Lock className="field-icon" size={18} />
+              <input
+                type="password"
+                required
+                placeholder="Mot de passe"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <button type="submit" className="login-btn" disabled={isLoading}>
+            {isLoading ? <span className="spinner" /> : <>Se connecter <ArrowRight size={18} /></>}
+          </button>
+        </form>
+
+        <footer className="login-footer">
+          <a href="#">Mot de passe oublié ?</a>
+          <div className="divider" />
+          <p>Pas de compte ? <a href="/register" className="signup">S'inscrire</a></p>
+        </footer>
+      </div>
+
+      <style jsx>{`
         .login-page {
           width: 100%;
           min-height: 100vh;
@@ -107,11 +107,17 @@ export default function LoginView() {
 
         .login-card {
           width: 100%;
-          max-width: 440px;
+          max-width: 400px;
           text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
         }
 
-        .login-header { margin-bottom: 48px; }
+        .login-header { 
+          margin-bottom: 40px;
+          width: 100%;
+        }
         .main-logo { 
           height: 56px; 
           width: auto; 
@@ -133,62 +139,77 @@ export default function LoginView() {
           gap: 12px;
           padding: 14px 18px;
           background: rgba(239, 68, 68, 0.1);
-          border: 1px solid rgba(239, 68, 68, 0.3);
-          border-radius: 14px;
+          border: 1px solid rgba(239, 68, 68, 0.2);
+          border-radius: 12px;
           color: #EF4444;
           font-size: 14px;
           margin-bottom: 24px;
           text-align: left;
+          width: 100%;
         }
 
-        .login-form { display: flex; flex-direction: column; gap: 18px; }
+        .login-form { 
+          display: flex; 
+          flex-direction: column; 
+          gap: 16px;
+          width: 100%;
+        }
+
+        .field-group {
+          width: 100%;
+        }
 
         .input-box {
           position: relative;
           display: flex;
           align-items: center;
+          width: 100%;
         }
         .field-icon {
           position: absolute;
-          left: 20px;
-          color: #505050;
+          left: 18px;
+          color: #666;
           pointer-events: none;
-          transition: color 0.3s;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          z-index: 2;
         }
         .input-box input {
           width: 100%;
-          background: #0F0F0F !important;
-          border: 1px solid rgba(255, 255, 255, 0.08) !important;
-          border-radius: 16px;
-          padding: 20px 24px 20px 56px;
+          background: #0A0A0A !important;
+          border: 1px solid rgba(255, 255, 255, 0.05) !important;
+          border-radius: 14px;
+          padding: 18px 24px 18px 52px;
           color: white;
-          font-size: 16px;
+          font-size: 15px;
           outline: none;
-          transition: all 0.3s;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .input-box input:focus {
-          border-color: #1F6F5C !important;
-          background: #121212 !important;
+          border-color: rgba(31, 111, 92, 0.5) !important;
+          background: #0F0F0F !important;
+          box-shadow: 0 0 0 4px rgba(31, 111, 92, 0.1);
         }
         .input-box:has(input:focus) .field-icon {
           color: #1F6F5C;
+          transform: scale(1.1);
         }
 
         .login-btn {
-          height: 62px;
+          height: 58px;
           background: white;
           color: black;
           border: none;
-          border-radius: 16px;
-          font-size: 16px;
-          font-weight: 800;
+          border-radius: 14px;
+          font-size: 15px;
+          font-weight: 700;
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 12px;
-          margin-top: 16px;
-          transition: all 0.3s;
+          gap: 10px;
+          margin-top: 20px;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          width: 100%;
         }
         .login-btn:hover { 
           background: #E0E0E0; 
@@ -222,6 +243,6 @@ export default function LoginView() {
           .login-header { margin-bottom: 36px; }
         }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 }

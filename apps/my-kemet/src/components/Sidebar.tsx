@@ -62,7 +62,7 @@ const Sidebar = () => {
 
             <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <NavLinkItem href="/profile" icon={<User size={20} />} label="Profil" />
-                <NavLinkItem href="/support" icon={<Headphones size={20} />} label="Support" />
+                <NavLinkItem href="/requests" icon={<Headphones size={20} />} label="Support" />
                 <NavLinkItem href="/settings" icon={<Settings size={20} />} label="Réglages" />
             </div>
         </nav>

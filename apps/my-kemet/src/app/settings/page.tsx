@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { Bell, Shield, Eye, Smartphone, Database, Headphones, Moon, Download, CheckCircle, Clock, AlertCircle, ArrowRight, Zap } from 'lucide-react';
+import { Bell, Shield, Eye, Smartphone, Database, Headphones, Moon, Download, CheckCircle, Clock, AlertCircle, ArrowRight, Zap, Bluetooth } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -18,6 +18,7 @@ export default function SettingsPage() {
     const [currentVersion, setCurrentVersion] = useState('2.4.1');
     const { user } = useAuth();
     const [vehicle, setVehicle] = useState<any>(null);
+    const [downloaded, setDownloaded] = useState(false);
 
     useEffect(() => {
         loadUpdates();
@@ -251,40 +252,128 @@ export default function SettingsPage() {
                                 <Clock size={16} /> {installing === 'rollback' ? 'Restauration...' : 'Version précédente'}
                             </button>
 
-                            {/* Dynamic Update Button */}
-                            {updates.length > 0 && updates[0].version !== currentVersion && (
+                            {/* Bluetooth Button - Only visible after download */}
+                            {downloaded && updates.length > 0 && updates[0].version !== currentVersion && (
                                 <button
                                     onClick={() => {
-                                        setInstalling('update');
+                                        setInstalling('bluetooth');
                                         let p = 0;
-                                        const targetVersion = updates[0].version; // Get latest version
                                         const stages = [
-                                            { limit: 30, text: 'Téléchargement du package...' },
-                                            { limit: 60, text: 'Vérification de l\'intégrité...' },
-                                            { limit: 100, text: 'Installation du micrologiciel...' }
+                                            { limit: 20, text: 'Recherche d\'appareils Bluetooth...' },
+                                            { limit: 50, text: 'Connexion au véhicule...' },
+                                            { limit: 100, text: 'Transfert des données via Bluetooth...' }
                                         ];
 
                                         const interval = setInterval(() => {
-                                            p += Math.floor(Math.random() * 5) + 2;
+                                            p += Math.floor(Math.random() * 4) + 1;
                                             if (p >= 100) {
                                                 p = 100;
                                                 setUpdateProgress(100);
-                                                setProgressStatus('Terminé');
+                                                setProgressStatus('Transfert terminé');
                                                 clearInterval(interval);
                                                 setTimeout(() => {
                                                     setInstalling(null);
                                                     setUpdateProgress(0);
                                                     setProgressStatus('');
-                                                    setSuccess(`Mise à jour ${targetVersion} installée avec succès !`);
-                                                    setCurrentVersion(targetVersion);
+                                                    setSuccess(`Mise à jour envoyée avec succès via Bluetooth.`);
+                                                    setDownloaded(false); // Reset after success
                                                     setTimeout(() => setSuccess(''), 3000);
-                                                }, 500);
+                                                }, 800);
                                             } else {
                                                 setUpdateProgress(p);
                                                 const stage = stages.find(s => p <= s.limit) || stages[2];
                                                 setProgressStatus(stage.text);
                                             }
-                                        }, 100);
+                                        }, 200);
+                                    }}
+                                    disabled={!!installing}
+                                    style={{
+                                        background: 'rgba(59, 130, 246, 0.1)',
+                                        border: '1px solid rgba(59, 130, 246, 0.3)',
+                                        color: '#3B82F6',
+                                        padding: '12px',
+                                        borderRadius: 'var(--radius-sm)',
+                                        fontSize: '13px',
+                                        fontWeight: 600,
+                                        cursor: installing ? 'not-allowed' : 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '8px',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    <Bluetooth size={16} /> {installing === 'bluetooth' ? 'Envoi...' : 'Envoi Bluetooth'}
+                                </button>
+                            )}
+
+                            {/* Dynamic Update/Download Button */}
+                            {updates.length > 0 && updates[0].version !== currentVersion && (
+                                <button
+                                    onClick={() => {
+                                        if (!downloaded) {
+                                            // Downloading Phase
+                                            setInstalling('download');
+                                            let p = 0;
+                                            const stages = [
+                                                { limit: 50, text: 'Téléchargement du package...' },
+                                                { limit: 100, text: 'Vérification de l\'intégrité...' }
+                                            ];
+
+                                            const interval = setInterval(() => {
+                                                p += Math.floor(Math.random() * 5) + 3;
+                                                if (p >= 100) {
+                                                    p = 100;
+                                                    setUpdateProgress(100);
+                                                    setProgressStatus('Téléchargement terminé');
+                                                    clearInterval(interval);
+                                                    setTimeout(() => {
+                                                        setInstalling(null);
+                                                        setUpdateProgress(0);
+                                                        setProgressStatus('');
+                                                        setDownloaded(true);
+                                                        setSuccess('Téléchargement terminé. Prêt à installer.');
+                                                        setTimeout(() => setSuccess(''), 3000);
+                                                    }, 500);
+                                                } else {
+                                                    setUpdateProgress(p);
+                                                    const stage = stages.find(s => p <= s.limit) || stages[1];
+                                                    setProgressStatus(stage.text);
+                                                }
+                                            }, 100);
+                                        } else {
+                                            // Installation Phase (OTA)
+                                            setInstalling('update');
+                                            let p = 0;
+                                            const targetVersion = updates[0].version;
+                                            const stages = [
+                                                { limit: 50, text: 'Préparation du véhicule...' },
+                                                { limit: 100, text: 'Installation du micrologiciel...' }
+                                            ];
+
+                                            const interval = setInterval(() => {
+                                                p += Math.floor(Math.random() * 5) + 2;
+                                                if (p >= 100) {
+                                                    p = 100;
+                                                    setUpdateProgress(100);
+                                                    setProgressStatus('Terminé');
+                                                    clearInterval(interval);
+                                                    setTimeout(() => {
+                                                        setInstalling(null);
+                                                        setUpdateProgress(0);
+                                                        setProgressStatus('');
+                                                        setSuccess(`Mise à jour ${targetVersion} installée avec succès !`);
+                                                        setCurrentVersion(targetVersion);
+                                                        setDownloaded(false);
+                                                        setTimeout(() => setSuccess(''), 3000);
+                                                    }, 500);
+                                                } else {
+                                                    setUpdateProgress(p);
+                                                    const stage = stages.find(s => p <= s.limit) || stages[1];
+                                                    setProgressStatus(stage.text);
+                                                }
+                                            }, 100);
+                                        }
                                     }}
                                     disabled={!!installing}
                                     style={{
@@ -303,8 +392,10 @@ export default function SettingsPage() {
                                         boxShadow: '0 4px 15px var(--accent-glow)'
                                     }}
                                 >
-                                    <Zap size={16} fill="white" />
-                                    {installing === 'update' ? 'Mise à jour...' : `Installer ${updates[0].version}`}
+                                    {downloaded ? <Zap size={16} fill="white" /> : <Download size={16} />}
+                                    {installing === 'download' ? 'Téléchargement...' :
+                                        installing === 'update' ? 'Installation...' :
+                                            downloaded ? `Installer ${updates[0].version}` : `Télécharger ${updates[0].version}`}
                                 </button>
                             )}
 
@@ -352,6 +443,14 @@ export default function SettingsPage() {
                                 <CheckCircle size={16} /> {success}
                             </div>
                         )}
+
+                        <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--glass-border)' }}>
+                            <ToggleItem
+                                label="Mises à jour par Bluetooth"
+                                description="Autoriser le transfert de mises à jour via une connexion Bluetooth directe."
+                                defaultChecked
+                            />
+                        </div>
                     </div>
                 </SettingsSection>
 

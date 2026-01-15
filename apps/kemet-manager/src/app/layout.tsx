@@ -50,15 +50,15 @@ export default function RootLayout({
         <meta name="theme-color" content="#0F172A" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <link rel="apple-touch-icon" href="/icon.png" />
+        {/* Unregister any previous Service Worker to avoid caching issues */}
         <script dangerouslySetInnerHTML={{
           __html: `
             if ('serviceWorker' in navigator) {
-              window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/sw.js').then(function(registration) {
-                  console.log('K-Manager ServiceWorker registration successful');
-                }, function(err) {
-                  console.log('K-Manager ServiceWorker registration failed: ', err);
-                });
+              navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) {
+                  registration.unregister();
+                  console.log('K-Manager ServiceWorker unregistered');
+                }
               });
             }
           `

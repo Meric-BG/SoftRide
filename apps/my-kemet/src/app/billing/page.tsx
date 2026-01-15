@@ -16,7 +16,6 @@ const CARDS = [
     { id: '1', brand: 'Visa', last4: '4242', expiry: '05/26', isDefault: true },
     { id: '2', brand: 'Mastercard', last4: '8812', expiry: '12/25', isDefault: false },
 ];
-
 export default function BillingPage() {
     const [cards, setCards] = useState(CARDS);
 
@@ -72,6 +71,8 @@ export default function BillingPage() {
                             </motion.div>
                         ))}
                     </div>
+
+
                 </section>
 
                 {/* Subscription Status */}
