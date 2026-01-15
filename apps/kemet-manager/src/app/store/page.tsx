@@ -18,6 +18,7 @@ interface Feature {
     price_annual_xof: number;
     image_url: string;
     is_active: boolean;
+    allow_installments: boolean; // New field
     category: string;
     created_at?: string;
 }
@@ -31,6 +32,7 @@ export default function StorePage() {
 
     const [formData, setFormData] = useState<Partial<Feature>>({
         is_active: true,
+        allow_installments: false,
         category: 'Performance',
         price_xof: 0,
         price_annual_xof: 0
@@ -88,6 +90,7 @@ export default function StorePage() {
                         price_annual_xof: formData.price_annual_xof,
                         image_url: formData.image_url,
                         is_active: formData.is_active,
+                        allow_installments: formData.allow_installments,
                         category: formData.category
                     })
                     .eq('id', editingFeature.id);
@@ -259,10 +262,9 @@ export default function StorePage() {
                             initial={{ opacity: 0, scale: 0.95, y: 30 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 30 }}
-                            className="premium-modal-content"
+                            className="premium-modal-content custom-scrollbar"
                             onClick={e => e.stopPropagation()}
                         >
-                            {/* Progress Background Accent */}
                             <div className="modal-glow-accent" />
 
                             <button className="premium-close-btn" onClick={closeModal}>
@@ -288,14 +290,14 @@ export default function StorePage() {
                                         </div>
 
                                         <div className="premium-input-field">
-                                            <label>URL de l'image</label>
+                                            <label>URL de l'image (Optionnel)</label>
                                             <div className="input-with-icon">
                                                 <ImageIcon size={16} className="field-icon" />
                                                 <input
                                                     type="text"
                                                     value={formData.image_url || ''}
                                                     onChange={e => setFormData({ ...formData, image_url: e.target.value })}
-                                                    placeholder="https://example.com/image.jpg"
+                                                    placeholder="Lien vers l'image"
                                                 />
                                             </div>
                                         </div>
@@ -309,7 +311,7 @@ export default function StorePage() {
                                                     required
                                                     value={formData.name || ''}
                                                     onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                                    placeholder="Nom court et accrocheur"
+                                                    placeholder="ex: Mode Sentinelle Pro"
                                                 />
                                             </div>
                                         </div>
@@ -332,11 +334,11 @@ export default function StorePage() {
                                         <div className="premium-input-field">
                                             <label>Description commerciale</label>
                                             <textarea
-                                                rows={4}
+                                                rows={3}
                                                 required
                                                 value={formData.description || ''}
                                                 onChange={e => setFormData({ ...formData, description: e.target.value })}
-                                                placeholder="Quels sont les avantages pour l'utilisateur ?"
+                                                placeholder="Quels sont les avantages ?"
                                             />
                                         </div>
                                     </div>
@@ -349,7 +351,7 @@ export default function StorePage() {
 
                                         <div className="tier-pricing-grid">
                                             <div className="premium-input-field">
-                                                <label>Prix Mensuel / Unique (FCFA)</label>
+                                                <label>Prix Mensuel (FCFA)</label>
                                                 <div className="input-with-icon">
                                                     <span className="field-symbol">M</span>
                                                     <input
@@ -376,34 +378,43 @@ export default function StorePage() {
                                         </div>
 
                                         <div className="premium-input-field">
-                                            <label>Disponibilité</label>
+                                            <label>Disponibilité Store</label>
                                             <div className="select-wrapper">
                                                 <select
                                                     value={formData.is_active ? 'Actif' : 'Inactif'}
                                                     onChange={e => setFormData({ ...formData, is_active: e.target.value === 'Actif' })}
                                                 >
-                                                    <option value="Actif">Actif (Produit commercialisé)</option>
-                                                    <option value="Inactif">Inactif (Brouillon technique)</option>
+                                                    <option value="Actif">Publié (Visible par tous les véhicules)</option>
+                                                    <option value="Inactif">Brouillon (Masqué)</option>
                                                 </select>
                                             </div>
                                         </div>
 
+                                        <div className="premium-input-field">
+                                            <label>Options de paiement</label>
+                                            <div className={`premium-toggle-simple ${formData.allow_installments ? 'on' : 'off'}`}
+                                                onClick={() => setFormData({ ...formData, allow_installments: !formData.allow_installments })}>
+                                                <div className="toggle-thumb" />
+                                                <span>Paiement fractionné autorisé</span>
+                                            </div>
+                                        </div>
+
                                         <div className="info-alert">
-                                            <Info size={14} />
-                                            <p>Les changements seront appliqués au prochain rafraîchissement du Store client.</p>
+                                            <Check size={14} style={{ flexShrink: 0 }} />
+                                            <p>Une fois publié, ce service sera immédiatement visible par l'ensemble de la flotte Kemet.</p>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="premium-modal-footer">
-                                    <button type="button" className="action-btn-secondary" onClick={closeModal}>Fermer</button>
+                                    <button type="button" className="action-btn-secondary" onClick={closeModal}>Annuler</button>
                                     <motion.button
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
                                         type="submit"
                                         className="action-btn-primary"
                                     >
-                                        {editingFeature ? 'Mettre à jour' : 'Lancer le service'}
+                                        {editingFeature ? 'Enregistrer les modifications' : 'Lancer le service'}
                                     </motion.button>
                                 </div>
                             </form>
@@ -432,8 +443,8 @@ export default function StorePage() {
         .search-box input { width: 100%; background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); border-radius: 16px; padding: 14px 45px; color: white; outline: none; }
         .view-stats { color: var(--text-secondary); font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
 
-        .features-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 24px; }
-        .feature-card { border-radius: 28px; overflow: hidden; display: flex; flex-direction: column; background: rgba(255,255,255,0.01); border: 1px solid var(--glass-border); transition: all 0.3s; }
+        .features-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .feature-card { border-radius: 24px; overflow: hidden; display: flex; flex-direction: column; background: rgba(255,255,255,0.01); border: 1px solid var(--glass-border); transition: all 0.3s; }
         .feature-card:hover { transform: translateY(-8px); border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.03); }
 
         .card-image { height: 160px; position: relative; background: rgba(0,0,0,0.3); }
@@ -445,14 +456,14 @@ export default function StorePage() {
         .card-type-tag.blue { background: #3B82F6; color: white; }
         .card-type-tag.amber { background: #FBBF24; color: black; }
 
-        .card-content { padding: 24px; flex: 1; display: flex; flex-direction: column; }
+        .card-content { padding: 20px; flex: 1; display: flex; flex-direction: column; }
         .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
-        .feature-title { font-size: 18px; font-weight: 800; }
-        .feature-tech-code { font-size: 10px; font-weight: 700; color: var(--accent-primary); opacity: 0.8; font-family: 'JetBrains Mono', monospace; display: block; margin-top: 2px; }
-        .card-actions { display: flex; gap: 8px; }
-        .row-action-btn { padding: 6px; border-radius: 8px; border: none; background: rgba(255,255,255,0.05); color: var(--text-secondary); cursor: pointer; }
+        .feature-title { font-size: 16px; font-weight: 800; }
+        .feature-tech-code { font-size: 9px; font-weight: 700; color: var(--accent-primary); opacity: 0.8; font-family: 'JetBrains Mono', monospace; display: block; margin-top: 2px; }
+        .card-actions { display: flex; gap: 6px; }
+        .row-action-btn { padding: 4px; border-radius: 6px; border: none; background: rgba(255,255,255,0.05); color: var(--text-secondary); cursor: pointer; }
         .row-action-btn:hover { background: white; color: black; }
-        .feature-description { font-size: 13px; color: var(--text-secondary); margin-bottom: 24px; line-height: 1.5; }
+        .feature-description { font-size: 12px; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.4; }
 
         .card-metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; background: rgba(0,0,0,0.2); padding: 16px; border-radius: 16px; margin-bottom: 24px; }
         .metric-box { display: flex; flex-direction: column; gap: 2px; }
@@ -471,86 +482,113 @@ export default function StorePage() {
 
         /* PREMIUM MODAL */
         .premium-modal-overlay {
-          position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-          background: rgba(0,0,0,0.4); backdrop-filter: blur(20px);
-          display: flex; align-items: center; justify-content: center;
-          z-index: 2000; padding: 20px;
+          position: fixed; 
+          top: 0; left: 0; right: 0; bottom: 0;
+          background: rgba(0,0,0,0.6); 
+          backdrop-filter: blur(12px);
+          display: flex; 
+          justify-content: center;
+          align-items: center;
+          z-index: 9999; 
+          padding: 20px;
+          padding-left: 280px; /* Account for 260px sidebar + gap */
+          overflow-y: auto;
         }
         .premium-modal-content {
           background: #0F0F12;
           border: 1px solid rgba(255,255,255,0.1);
-          width: 100%; max-width: 860px;
-          border-radius: 40px; 
+          width: 100%; 
+          max-width: 860px;
+          border-radius: 32px; 
           position: relative;
-          padding: 48px;
-          overflow: hidden;
+          padding: 40px;
+          margin: auto; /* Robust centering in flex container */
           box-shadow: 0 50px 100px -20px rgba(0,0,0,0.8);
+          animation: modalAppear 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes modalAppear {
+          from { opacity: 0; transform: translateY(20px) scale(0.98); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
         }
         .modal-glow-accent {
-          position: absolute; top: 0; left: 0; right: 0; height: 4px;
+          position: absolute; top: 0; left: 0; right: 0; height: 3px;
           background: linear-gradient(90deg, var(--accent-primary), #3B82F6, #FBBF24);
-          opacity: 0.6;
+          opacity: 0.4;
         }
         .premium-close-btn {
-          position: absolute; top: 24px; right: 24px;
-          width: 40px; height: 40px; border-radius: 50%;
-          border: none; background: rgba(255,255,255,0.05); color: white;
+          position: absolute; top: 20px; right: 20px;
+          width: 36px; height: 36px; border-radius: 50%;
+          border: none; background: rgba(255,255,255,0.03); color: white;
           display: flex; align-items: center; justify-content: center;
           cursor: pointer; transition: all 0.2s;
         }
-        .premium-close-btn:hover { background: rgba(255,255,255,0.1); transform: rotate(90deg); }
+        .premium-close-btn:hover { background: rgba(255,255,255,0.08); transform: rotate(90deg); }
 
-        .premium-modal-header { display: flex; gap: 24px; align-items: center; margin-bottom: 40px; }
+        .premium-modal-header { display: flex; gap: 20px; align-items: center; margin-bottom: 32px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 24px; }
         .header-icon-container {
-          width: 64px; height: 64px; border-radius: 20px;
+          width: 56px; height: 56px; border-radius: 16px;
           background: linear-gradient(135deg, var(--accent-primary), rgba(255,255,255,0.05));
           display: flex; align-items: center; justify-content: center;
           color: white; border: 1px solid rgba(255,255,255,0.1);
         }
         .icon-pulse { animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
         
-        .header-text h2 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; }
-        .header-text p { color: var(--text-secondary); font-size: 14px; opacity: 0.7; }
+        .header-text h2 { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; }
+        .header-text p { color: var(--text-secondary); font-size: 13px; opacity: 0.6; }
 
-        .premium-form { display: flex; flex-direction: column; gap: 40px; }
-        .form-layout-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
-        .input-section-title { font-size: 11px; font-weight: 900; letter-spacing: 2px; color: var(--text-secondary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px; }
+        .premium-form { display: flex; flex-direction: column; gap: 32px; }
+        .form-layout-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 32px; }
+        .form-column { display: flex; flex-direction: column; gap: 24px; }
+        .input-section-title { font-size: 10px; font-weight: 900; letter-spacing: 1.5px; color: var(--text-secondary); margin-bottom: 4px; display: flex; align-items: center; gap: 8px; opacity: 0.8; }
         
-        .premium-input-field { display: flex; flex-direction: column; gap: 10px; }
-        .premium-input-field label { font-size: 12px; font-weight: 700; color: var(--text-secondary); }
+        .premium-input-field { display: flex; flex-direction: column; gap: 8px; }
+        .premium-input-field label { font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; }
         
-        .image-upload-zone {
-          height: 120px; border: 2px dashed rgba(255,255,255,0.1); border-radius: 16px;
-          background: rgba(255,255,255,0.02); display: flex; align-items: center; justify-content: center;
-          cursor: pointer; transition: all 0.2s;
-        }
-        .image-upload-zone:hover { border-color: var(--accent-primary); background: rgba(45, 106, 79, 0.05); }
-        .upload-visual { display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary); }
-
         .input-with-icon { position: relative; }
-        .field-icon { position: absolute; left: 14px; top: 14px; color: var(--text-secondary); opacity: 0.5; }
-        .field-symbol { position: absolute; left: 14px; top: 14px; font-size: 12px; font-weight: 900; color: var(--accent-primary); }
+        .field-icon { position: absolute; left: 14px; top: 14px; color: var(--text-secondary); opacity: 0.4; }
+        .field-symbol { position: absolute; left: 14px; top: 14px; font-size: 11px; font-weight: 900; color: var(--accent-primary); }
         
         .input-with-icon input, .premium-input-field textarea, .select-wrapper select {
-          width: 100%; height: 48px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1);
-          border-radius: 12px; color: white; padding: 0 16px; font-size: 14px; transition: all 0.2s;
+          width: 100%; height: 44px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 10px; color: white; padding: 0 16px; font-size: 14px; transition: all 0.2s;
         }
-        .input-with-icon input { padding-left: 44px; }
-        .premium-input-field textarea { height: auto; padding: 14px; }
-        .input-with-icon input:focus, .premium-input-field textarea:focus { border-color: var(--accent-primary); background: rgba(0,0,0,0.3); outline: none; box-shadow: 0 0 15px rgba(45,106,79,0.2); }
+        .input-with-icon input { padding-left: 40px; }
+        .premium-input-field textarea { height: auto; padding: 12px; resize: none; font-family: inherit; }
+        .input-with-icon input:focus, .premium-input-field textarea:focus { border-color: var(--accent-primary); background: rgba(255,255,255,0.04); outline: none; }
 
-        .dark-section { background: rgba(0,0,0,0.2); padding: 24px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); }
-        .premium-toggle { display: flex; background: rgba(255,255,255,0.03); padding: 4px; border-radius: 10px; gap: 4px; border: 1px solid rgba(255,255,255,0.05); }
-        .premium-toggle button { flex: 1; padding: 10px; border: none; background: transparent; color: var(--text-secondary); font-size: 13px; font-weight: 700; cursor: pointer; border-radius: 8px; transition: all 0.2s; }
-        .premium-toggle button.active { background: var(--accent-primary); color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .dark-section { background: rgba(255,255,255,0.01); padding: 24px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.03); }
+        .select-wrapper { position: relative; }
+        .select-wrapper select { appearance: none; cursor: pointer; }
+        .select-wrapper::after { content: '▾'; position: absolute; right: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--text-secondary); font-size: 12px; }
 
         .tier-pricing-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        .info-alert { display: flex; gap: 10px; padding: 12px; background: rgba(59,130,246,0.1); border-radius: 10px; color: #60A5FA; font-size: 11px; margin-top: 10px; border: 1px solid rgba(59,130,246,0.2); }
+        .info-alert { display: flex; gap: 10px; padding: 14px; background: rgba(59,130,246,0.05); border-radius: 12px; color: #60A5FA; font-size: 11px; margin-top: 10px; border: 1px solid rgba(59,130,246,0.1); line-height: 1.4; }
 
-        .premium-modal-footer { display: flex; justify-content: flex-end; gap: 16px; margin-top: 20px; }
-        .action-btn-secondary { padding: 12px 24px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: white; cursor: pointer; font-weight: 600; }
-        .action-btn-primary { padding: 12px 32px; border-radius: 12px; border: none; background: var(--accent-primary); color: white; font-weight: 800; cursor: pointer; box-shadow: 0 4px 15px var(--accent-glow); }
+        .premium-modal-footer { display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 24px; }
+        .action-btn-secondary { padding: 10px 24px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: white; cursor: pointer; font-weight: 600; font-size: 14px; }
+        .action-btn-primary { padding: 10px 32px; border-radius: 10px; border: none; background: var(--accent-primary); color: white; font-weight: 700; cursor: pointer; font-size: 14px; }
+
+        .premium-toggle-simple {
+          display: flex; align-items: center; gap: 12px;
+          background: rgba(255,255,255,0.03); 
+          padding: 8px 16px; border-radius: 12px;
+          cursor: pointer; border: 1px solid rgba(255,255,255,0.05);
+          transition: all 0.2s;
+          font-size: 13px; font-weight: 600;
+        }
+        .premium-toggle-simple.on { border-color: var(--accent-primary); background: rgba(16, 185, 129, 0.05); }
+        .toggle-thumb {
+          width: 36px; height: 18px; background: rgba(255,255,255,0.1); 
+          border-radius: 20px; position: relative; transition: all 0.3s;
+        }
+        .toggle-thumb::after {
+          content: ''; position: absolute; left: 2px; top: 2px;
+          width: 14px; height: 14px; background: white; border-radius: 50%;
+          transition: all 0.3s;
+        }
+        .premium-toggle-simple.on .toggle-thumb { background: var(--accent-primary); }
+        .premium-toggle-simple.on .toggle-thumb::after { left: 20px; }
         
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }

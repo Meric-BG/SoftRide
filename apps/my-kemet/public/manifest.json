@@ -1,45 +1,17 @@
 {
+    "name": "My Kemet",
     "short_name": "My Kemet",
-    "name": "My Kemet - Experience Automobile Premium",
-    "description": "Gérez votre véhicule Gezo, accédez au Kemet Store et optimisez votre conduite.",
+    "description": "Compagnon de bord pour votre véhicule électrique Kemet",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#000000",
+    "theme_color": "#1F4D3E",
     "icons": [
         {
-            "src": "logo.png",
-            "sizes": "192x192",
+            "src": "/icon.png",
+            "sizes": "1024x1024",
             "type": "image/png",
             "purpose": "any maskable"
-        },
-        {
-            "src": "logo.png",
-            "sizes": "512x512",
-            "type": "image/png",
-            "purpose": "any maskable"
-        }
-    ],
-    "start_url": "/",
-    "scope": "/",
-    "display": "standalone",
-    "orientation": "portrait",
-    "theme_color": "#000000",
-    "background_color": "#000000",
-    "categories": [
-        "automotive",
-        "utilities"
-    ],
-    "screenshots": [
-        {
-            "src": "gezo-hero.png",
-            "sizes": "1920x1080",
-            "type": "image/png",
-            "form_factor": "wide",
-            "label": "Dashboard Premium"
-        },
-        {
-            "src": "gezo-side.png",
-            "sizes": "1080x1920",
-            "type": "image/png",
-            "form_factor": "narrow",
-            "label": "Design Innovant"
         }
     ]
 }

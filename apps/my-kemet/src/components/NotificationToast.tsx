@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, Info, X, CheckCircle, AlertTriangle } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 const NOTIFICATIONS = [
     { id: 1, title: 'Charge terminée', msg: 'Votre batterie est chargée à 100%.', type: 'success' },
@@ -14,15 +15,35 @@ export default function NotificationToast() {
     const [activeNotification, setActiveNotification] = useState<any>(null);
 
     useEffect(() => {
-        // Randomly show notifications every 45-60 seconds for simulation
-        const showRandom = () => {
-            const random = NOTIFICATIONS[Math.floor(Math.random() * NOTIFICATIONS.length)];
-            setActiveNotification(random);
-            setTimeout(() => setActiveNotification(null), 5000);
-        };
+        // Subscribe to NEW software updates
+        const channel = supabase
+            .channel('global-notifications')
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'software_updates',
+                    filter: 'is_published=eq.true'
+                },
+                (payload) => {
+                    // Show notification for new published update
+                    setActiveNotification({
+                        id: payload.new.id,
+                        title: 'Mise à jour disponible 🚀',
+                        msg: `La version ${payload.new.version} est prête à être installée.`,
+                        type: 'info'
+                    });
 
-        const timer = setTimeout(showRandom, 10000); // First one after 10s
-        return () => clearTimeout(timer);
+                    // Auto-dismiss after 8 seconds
+                    setTimeout(() => setActiveNotification(null), 8000);
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     return (

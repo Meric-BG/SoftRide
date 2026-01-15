@@ -1,5 +1,5 @@
 // Minimal Service Worker for PWA compatibility
-const CACHE_NAME = 'my-kemet-v1';
+const CACHE_NAME = 'kemet-manager-v1';
 
 self.addEventListener('install', (event) => {
     event.waitUntil(

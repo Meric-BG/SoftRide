@@ -13,9 +13,34 @@ import {
 import { COLORS } from '@/constants/colors';
 import { MOCK_DATA } from '@/constants/mockData';
 import StatCard from '@/components/StatCard';
+import { useAuth } from '@/contexts/AuthContext';
+import LoginView from '@/components/LoginView';
 
 export default function AdminDashboard() {
+  const { user, loading } = useAuth();
   const [filter, setFilter] = useState<'day' | 'week' | 'month' | 'year'>('month');
+
+  // Show login if not authenticated
+  if (!loading && !user) {
+    return <LoginView />;
+  }
+
+  // Show loader while checking auth
+  if (loading) {
+    return (
+      <div style={{
+        height: '100vh',
+        width: '100vw',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#000',
+        color: 'var(--accent-primary)'
+      }}>
+        Chargement...
+      </div>
+    );
+  }
   const data = MOCK_DATA[filter];
 
   return (

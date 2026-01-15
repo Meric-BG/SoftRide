@@ -249,3 +249,39 @@
     border-radius: 4px;
     text-transform: uppercase;
 }
+
+/* Status Badges */
+.statusBadge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    z-index: 2;
+}
+
+.statusBadge.active {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10B981;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.statusBadge.expired {
+    background: rgba(239, 68, 68, 0.1);
+    color: #EF4444;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.expiredCard {
+    border-color: rgba(239, 68, 68, 0.3) !important;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(20, 20, 20, 0.6) 100%) !important;
+}
+
+.expiredCard:hover {
+    border-color: rgba(239, 68, 68, 0.5) !important;
+}

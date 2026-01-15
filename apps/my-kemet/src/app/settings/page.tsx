@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { Bell, Shield, Eye, Smartphone, Database, Headphones, Moon, Download, CheckCircle, Clock, AlertCircle, ArrowRight, Zap } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function SettingsPage() {
     const [updates, setUpdates] = useState<any[]>([]);
@@ -15,9 +16,12 @@ export default function SettingsPage() {
     const [updateProgress, setUpdateProgress] = useState(0);
     const [progressStatus, setProgressStatus] = useState('');
     const [currentVersion, setCurrentVersion] = useState('2.4.1');
+    const { user } = useAuth();
+    const [vehicle, setVehicle] = useState<any>(null);
 
     useEffect(() => {
         loadUpdates();
+        if (user) loadVehicleData();
 
         // Subscribe to new updates
         const channel = supabase
@@ -54,6 +58,38 @@ export default function SettingsPage() {
         }
     };
 
+    const loadVehicleData = async () => {
+        if (!user) return;
+        try {
+            // First get the profile to find the VIM
+            const { data: profile, error: profileErr } = await supabase
+                .from('profiles')
+                .select('vim_linked')
+                .eq('id', user.id)
+                .single();
+
+            if (profileErr) throw profileErr;
+            if (!profile?.vim_linked) return;
+
+            // Then get the vehicle data
+            const { data: vehicleData, error: vehicleErr } = await supabase
+                .from('vehicles')
+                .select('*')
+                .eq('vim', profile.vim_linked)
+                .single();
+
+            if (vehicleErr) throw vehicleErr;
+            if (vehicleData) {
+                setVehicle(vehicleData);
+                if (vehicleData.software_version) {
+                    setCurrentVersion(vehicleData.software_version);
+                }
+            }
+        } catch (err) {
+            console.error('Erreur chargement données véhicule:', err);
+        }
+    };
+
     const handleInstall = async (updateId: string, version: string) => {
         try {
             setInstalling(updateId);
@@ -82,14 +118,28 @@ export default function SettingsPage() {
             }, 100);
 
             // In a real app, we would update the vehicle's version in Supabase here
-            setTimeout(() => {
-                setSuccess(`Mise à jour ${version} installée avec succès !`);
-                setCurrentVersion(version);
-                setTimeout(() => {
-                    setSuccess('');
+            setTimeout(async () => {
+                try {
+                    if (vehicle) {
+                        const { error: updateErr } = await supabase
+                            .from('vehicles')
+                            .update({ software_version: version })
+                            .eq('id', vehicle.id);
+
+                        if (updateErr) throw updateErr;
+                    }
+
+                    setSuccess(`Mise à jour ${version} installée avec succès !`);
+                    setCurrentVersion(version);
+                    setTimeout(() => {
+                        setSuccess('');
+                        setInstalling(null);
+                        setUpdateProgress(0);
+                    }, 3000);
+                } catch (err: any) {
+                    setError('Erreur lors de la sauvegarde de la version : ' + err.message);
                     setInstalling(null);
-                    setUpdateProgress(0);
-                }, 3000);
+                }
             }, 5000);
 
         } catch (err: any) {
@@ -118,7 +168,7 @@ export default function SettingsPage() {
                                     <CheckCircle size={20} color="#10B981" />
                                 </div>
                                 <div>
-                                    <div style={{ fontWeight: 600, fontSize: '15px' }}>Version actuelle : 2.4.12</div>
+                                    <div style={{ fontWeight: 600, fontSize: '15px' }}>Version actuelle : {currentVersion}</div>
                                     <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Dernière vérification : Aujourd'hui à 08:30</div>
                                 </div>
                             </div>
@@ -131,9 +181,17 @@ export default function SettingsPage() {
                                 onClick={() => {
                                     setInstalling('rollback');
                                     let p = 0;
+                                    // Determine rollback target: try to find the one after current, or default to second in list, or fallback
+                                    const currentIndex = updates.findIndex(u => u.version === currentVersion);
+                                    const targetUpdate = (currentIndex >= 0 && currentIndex + 1 < updates.length)
+                                        ? updates[currentIndex + 1]
+                                        : (updates.length > 1 ? updates[1] : { version: '2.4.0' }); // Fallback
+
+                                    const targetVersion = targetUpdate.version;
+
                                     const stages = [
                                         { limit: 40, text: 'Préparation de la restauration...' },
-                                        { limit: 80, text: 'Récupération de la version 2.3.8...' },
+                                        { limit: 80, text: `Récupération de la version ${targetVersion}...` },
                                         { limit: 100, text: 'Finalisation du système...' }
                                     ];
 
@@ -144,12 +202,27 @@ export default function SettingsPage() {
                                             setUpdateProgress(100);
                                             setProgressStatus('Terminé');
                                             clearInterval(interval);
-                                            setTimeout(() => {
-                                                setInstalling(null);
-                                                setUpdateProgress(0);
-                                                setProgressStatus('');
-                                                setSuccess('Restauration de la version 2.3.8 terminée.');
-                                                setTimeout(() => setSuccess(''), 3000);
+                                            setTimeout(async () => {
+                                                try {
+                                                    if (vehicle) {
+                                                        const { error: updateErr } = await supabase
+                                                            .from('vehicles')
+                                                            .update({ software_version: targetVersion })
+                                                            .eq('id', vehicle.id);
+
+                                                        if (updateErr) throw updateErr;
+                                                    }
+
+                                                    setInstalling(null);
+                                                    setUpdateProgress(0);
+                                                    setProgressStatus('');
+                                                    setSuccess(`Restauration de la version ${targetVersion} terminée.`);
+                                                    setCurrentVersion(targetVersion);
+                                                    setTimeout(() => setSuccess(''), 3000);
+                                                } catch (err: any) {
+                                                    setError('Erreur lors de la restauration : ' + err.message);
+                                                    setInstalling(null);
+                                                }
                                             }, 500);
                                         } else {
                                             setUpdateProgress(p);
@@ -178,56 +251,77 @@ export default function SettingsPage() {
                                 <Clock size={16} /> {installing === 'rollback' ? 'Restauration...' : 'Version précédente'}
                             </button>
 
-                            <button
-                                onClick={() => {
-                                    setInstalling('update');
-                                    let p = 0;
-                                    const stages = [
-                                        { limit: 30, text: 'Téléchargement du package...' },
-                                        { limit: 60, text: 'Vérification de l\'intégrité...' },
-                                        { limit: 100, text: 'Installation du micrologiciel...' }
-                                    ];
+                            {/* Dynamic Update Button */}
+                            {updates.length > 0 && updates[0].version !== currentVersion && (
+                                <button
+                                    onClick={() => {
+                                        setInstalling('update');
+                                        let p = 0;
+                                        const targetVersion = updates[0].version; // Get latest version
+                                        const stages = [
+                                            { limit: 30, text: 'Téléchargement du package...' },
+                                            { limit: 60, text: 'Vérification de l\'intégrité...' },
+                                            { limit: 100, text: 'Installation du micrologiciel...' }
+                                        ];
 
-                                    const interval = setInterval(() => {
-                                        p += Math.floor(Math.random() * 5) + 2;
-                                        if (p >= 100) {
-                                            p = 100;
-                                            setUpdateProgress(100);
-                                            setProgressStatus('Terminé');
-                                            clearInterval(interval);
-                                            setTimeout(() => {
-                                                setInstalling(null);
-                                                setUpdateProgress(0);
-                                                setProgressStatus('');
-                                                setSuccess('Mise à jour 2.5.0 installée avec succès !');
-                                                setTimeout(() => setSuccess(''), 3000);
-                                            }, 500);
-                                        } else {
-                                            setUpdateProgress(p);
-                                            const stage = stages.find(s => p <= s.limit) || stages[2];
-                                            setProgressStatus(stage.text);
-                                        }
-                                    }, 100);
-                                }}
-                                disabled={!!installing}
-                                style={{
-                                    background: 'var(--accent-primary)',
-                                    border: 'none',
-                                    color: 'white',
-                                    padding: '12px',
-                                    borderRadius: 'var(--radius-sm)',
-                                    fontSize: '13px',
-                                    fontWeight: 600,
-                                    cursor: installing ? 'not-allowed' : 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: '8px',
-                                    boxShadow: '0 4px 15px var(--accent-glow)'
-                                }}
-                            >
-                                <Zap size={16} fill="white" /> {installing === 'update' ? 'Mise à jour...' : 'Lancer la mise à jour'}
-                            </button>
+                                        const interval = setInterval(() => {
+                                            p += Math.floor(Math.random() * 5) + 2;
+                                            if (p >= 100) {
+                                                p = 100;
+                                                setUpdateProgress(100);
+                                                setProgressStatus('Terminé');
+                                                clearInterval(interval);
+                                                setTimeout(() => {
+                                                    setInstalling(null);
+                                                    setUpdateProgress(0);
+                                                    setProgressStatus('');
+                                                    setSuccess(`Mise à jour ${targetVersion} installée avec succès !`);
+                                                    setCurrentVersion(targetVersion);
+                                                    setTimeout(() => setSuccess(''), 3000);
+                                                }, 500);
+                                            } else {
+                                                setUpdateProgress(p);
+                                                const stage = stages.find(s => p <= s.limit) || stages[2];
+                                                setProgressStatus(stage.text);
+                                            }
+                                        }, 100);
+                                    }}
+                                    disabled={!!installing}
+                                    style={{
+                                        background: 'var(--accent-primary)',
+                                        border: 'none',
+                                        color: 'white',
+                                        padding: '12px',
+                                        borderRadius: 'var(--radius-sm)',
+                                        fontSize: '13px',
+                                        fontWeight: 600,
+                                        cursor: installing ? 'not-allowed' : 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '8px',
+                                        boxShadow: '0 4px 15px var(--accent-glow)'
+                                    }}
+                                >
+                                    <Zap size={16} fill="white" />
+                                    {installing === 'update' ? 'Mise à jour...' : `Installer ${updates[0].version}`}
+                                </button>
+                            )}
+
+                            {/* Empty State / Up to date */}
+                            {updates.length > 0 && updates[0].version === currentVersion && (
+                                <div style={{
+                                    gridColumn: 'span 2',
+                                    textAlign: 'center',
+                                    padding: '20px',
+                                    background: 'rgba(255,255,255,0.02)',
+                                    borderRadius: '12px',
+                                    color: 'var(--text-secondary)',
+                                    fontSize: '13px'
+                                }}>
+                                    Votre système est à jour.
+                                </div>
+                            )}
                         </div>
 
                         {/* Progress Bar UI */}
