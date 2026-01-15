@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Zap, ShoppingBag, Settings, User } from 'lucide-react';
+import { Home, Zap, ShoppingBag, Settings, User, LogOut } from 'lucide-react';
 
 const Sidebar = () => {
     const pathname = usePathname();
@@ -51,12 +51,34 @@ const Sidebar = () => {
                 </h2>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
                 <NavLinkItem href="/" icon={<Home size={20} />} label="Tableau de bord" />
                 <NavLinkItem href="/updates" icon={<Zap size={20} />} label="Mises à jour" />
                 <NavLinkItem href="/store" icon={<ShoppingBag size={20} />} label="Kemet Store" />
                 <NavLinkItem href="/requests" icon={<Home size={20} />} label="Support" />
                 <NavLinkItem href="/profile" icon={<User size={20} />} label="Profil" />
+            </div>
+
+            <div
+                onClick={() => {
+                    localStorage.removeItem('token');
+                    window.location.href = '/login';
+                }}
+                style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '12px 16px',
+                    color: 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    marginTop: 'auto',
+                    borderTop: '1px solid var(--glass-border)',
+                    paddingTop: '20px'
+                }}
+            >
+                <LogOut size={20} />
+                Se déconnecter
             </div>
         </nav>
     );

@@ -4,30 +4,48 @@ class AnalyticsRepository {
 
     async getOverview() {
         try {
-            const revenueResult = get("SELECT SUM(amount) as total FROM payments WHERE status = 'PAID'");
-            const totalRevenue = revenueResult?.total || 0;
+            // Safe revenue fetch
+            let totalRevenue = 0;
+            try {
+                const revenueResult = get("SELECT SUM(amount) as total FROM payments WHERE status = 'PAID'");
+                totalRevenue = revenueResult?.total || 0;
+            } catch (e) {
+                console.error('Revenue query fail:', e.message);
+            }
 
-            const fleetData = query('SELECT * FROM vehicle_status_view');
-            const totalFleet = fleetData.length;
-            const activeFleet = fleetData.filter(v => v.connectivity_status === 'connected').length;
+            // Safe fleet fetch
+            let totalFleet = 0;
+            let activeFleet = 0;
+            let fleetData = [];
+            try {
+                fleetData = query('SELECT * FROM vehicle_status_view');
+                totalFleet = fleetData.length;
+                activeFleet = fleetData.filter(v => v.connectivity_status === 'connected').length;
+            } catch (e) {
+                console.error('Fleet query fail:', e.message);
+            }
 
-            const subsResult = get("SELECT COUNT(*) as count FROM subscriptions WHERE status = 'active'");
-            const totalSales = subsResult?.count || 0;
+            // Safe subscriptions fetch
+            let totalSales = 0;
+            try {
+                const subsResult = get("SELECT COUNT(*) as count FROM subscriptions WHERE status = 'active'");
+                totalSales = subsResult?.count || 0;
+            } catch (e) {
+                console.error('Subs query fail:', e.message);
+            }
 
-            // Group revenue by feature
-            console.log('📊 Analytics Debug: Querying revenue_analytics_view...');
-            const featureRevenue = query('SELECT * FROM revenue_analytics_view');
-
-            console.log(`📊 Analytics Result: 
-                - Revenue: ${totalRevenue} 
-                - Fleet: ${totalFleet} (Active: ${activeFleet})
-                - Sales: ${totalSales}
-                - Features: ${featureRevenue.length}`);
+            // Safe feature revenue
+            let featureRevenue = [];
+            try {
+                featureRevenue = query('SELECT * FROM revenue_analytics_view');
+            } catch (e) {
+                console.error('Feature revenue query fail:', e.message);
+            }
 
             return {
                 revenue: {
                     total: totalRevenue,
-                    monthly: totalRevenue * 0.15, // Projected monthly
+                    monthly: totalRevenue * 0.15,
                     mrr: totalRevenue * 0.05,
                     growth: 12.5,
                     byFeature: featureRevenue
@@ -43,8 +61,13 @@ class AnalyticsRepository {
                 }
             };
         } catch (error) {
-            console.error('Error in AnalyticsRepository.getOverview:', error);
-            throw error;
+            console.error('Fatal Analytics Error:', error);
+            // Absolute fallback to avoid frontend hanging
+            return {
+                revenue: { total: 0, monthly: 0, mrr: 0, growth: 0, byFeature: [] },
+                fleet: { total: 0, active: 0, growth: 0 },
+                sales: { total: 0, growth: 0 }
+            };
         }
     }
 

@@ -1,9 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --bg-primary: #050505;
-  --bg-secondary: #0F0F0F;
-  --bg-card: rgba(255, 255, 255, 0.05);
+  --bg-primary: #000000;
+  --bg-secondary: #0A0A0A;
+  --bg-card: rgba(255, 255, 255, 0.03);
 
   --accent-primary: #1F6F5C;
   --accent-glow: rgba(31, 111, 92, 0.5);
@@ -49,12 +49,13 @@ body {
 .text-gradient {
   background: linear-gradient(135deg, #fff 0%, #a0a0a0 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 /* Table hover effects */
 .store-row:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .store-row:hover .row-actions {

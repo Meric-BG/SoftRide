@@ -4,6 +4,17 @@ const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
 
+// List all vehicles (Admin)
+router.get('/', authMiddleware, async (req, res) => {
+    try {
+        const vehicles = await vehicleRepo.findAll();
+        res.json(vehicles);
+    } catch (error) {
+        console.error('List vehicles error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
 // Get vehicle info
 router.get('/:id', authMiddleware, async (req, res) => {
     try {

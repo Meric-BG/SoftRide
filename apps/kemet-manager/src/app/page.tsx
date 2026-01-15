@@ -11,18 +11,22 @@ export default function AdminDashboard() {
   const [error, setError] = React.useState('');
 
   React.useEffect(() => {
+    let mounted = true;
     const fetchStats = async () => {
+      setLoading(true);
+      setError('');
       try {
         const data = await adminApi.getOverview();
-        setStats(data);
+        if (mounted) setStats(data);
       } catch (err) {
         console.error('Failed to fetch stats:', err);
-        setError('Erreur lors de la récupération des statistiques');
+        if (mounted) setError('Impossible de charger les statistiques. Vérifiez la connexion au serveur.');
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     };
     fetchStats();
+    return () => { mounted = false; };
   }, []);
 
   if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Chargement...</div>;

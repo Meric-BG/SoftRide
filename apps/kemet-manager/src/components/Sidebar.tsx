@@ -66,6 +66,7 @@ const Sidebar = () => {
                     Analytics
                 </div>
                 <NavLink href="/" icon={<LayoutDashboard size={18} />} label="Vue d'ensemble" />
+                <NavLink href="/map" icon={<Truck size={18} />} label="Carte 3D" />
 
                 <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px', marginTop: '24px', paddingLeft: '16px' }}>
                     Gestion
@@ -79,15 +80,22 @@ const Sidebar = () => {
             <div style={{ paddingTop: '24px', borderTop: '1px solid var(--glass-border)' }}>
                 <NavLink href="/settings" icon={<Settings size={18} />} label="Paramètres" />
                 <div style={{ height: '8px' }}></div>
-                <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    padding: '12px 16px',
-                    color: 'var(--text-muted)',
-                    cursor: 'pointer',
-                    fontSize: '14px'
-                }}>
+                <div
+                    onClick={() => {
+                        localStorage.removeItem('admin_token');
+                        window.location.href = '/login';
+                    }}
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        padding: '12px 16px',
+                        color: 'var(--text-muted)',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        transition: 'all 0.2s'
+                    }}
+                >
                     <LogOut size={18} />
                     Déconnexion
                 </div>

@@ -1,7 +1,7 @@
 // API Client for Kemet Manager (Admin)
 // Connects to the backend API
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
 
 class AdminAPIClient {
     token: string | null;
@@ -25,6 +25,10 @@ class AdminAPIClient {
         if (typeof window !== 'undefined') {
             localStorage.removeItem('admin_token');
         }
+    }
+
+    getBaseUrl() {
+        return API_URL;
     }
 
     async request(endpoint: string, options: RequestInit = {}) {
@@ -64,6 +68,7 @@ class AdminAPIClient {
     async getRevenue() { return this.request('/analytics/revenue'); }
     async getFleet() { return this.request('/analytics/fleet'); }
     async getTopSales() { return this.request('/analytics/top-sales'); }
+    async listVehicles() { return this.request('/vehicles'); }
 
     // FOTA
     async getAllUpdates() { return this.request('/updates'); }

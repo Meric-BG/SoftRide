@@ -106,6 +106,14 @@ router.post('/deploy', authMiddleware, adminMiddleware, async (req, res) => {
 
         const created = await fotaRepo.createCampaign(campaign);
 
+        // Broadcast to all connected clients (e.g., 3D Map)
+        const systemEvents = require('../services/SystemEvents');
+        systemEvents.broadcast('TECH_UPDATE', {
+            version,
+            message: `Mise à jour ${version} publiée !`,
+            timestamp: new Date().toISOString()
+        });
+
         res.status(201).json({
             success: true,
             campaign: created,

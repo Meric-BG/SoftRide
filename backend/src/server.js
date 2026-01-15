@@ -14,6 +14,7 @@ const updatesRoutes = require('./routes/updates');
 const analyticsRoutes = require('./routes/analytics');
 const paymentRoutes = require('./routes/payment');
 const requestRoutes = require('./routes/requests');
+const eventRoutes = require('./routes/events');
 
 const app = express();
 app.set('trust proxy', true);
@@ -35,6 +36,7 @@ app.use('/api/updates', updatesRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/requests', requestRoutes);
+app.use('/api/events', eventRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

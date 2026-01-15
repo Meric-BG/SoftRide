@@ -1,4 +1,3 @@
-nohup: ignoring input
 
 > softride-fota-poc@0.1.0 backend:dev
 > nodemon backend/src/server.js
@@ -8,19 +7,1175 @@ nohup: ignoring input
 [33m[nodemon] watching path(s): *.*[39m
 [33m[nodemon] watching extensions: js,mjs,cjs,json[39m
 [32m[nodemon] starting `node backend/src/server.js`[39m
+[dotenv@17.2.3] injecting env (10) from backend/src/.env -- tip: 🗂️ backup and recover secrets: https://dotenvx.com/ops
+PRAGMA foreign_keys = ON
+-- Kemet SDV - SQLite Schema Init
+
+-- 1. USERS
+CREATE TABLE IF NOT EXISTS users (
+    user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    first_name TEXT,
+    last_name TEXT,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    phone_number TEXT,
+    account_status TEXT DEFAULT 'ACTIVE',
+    verified_email BOOLEAN DEFAULT 0,
+    role TEXT DEFAULT 'user',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+-- 2. VEHICLES
+CREATE TABLE IF NOT EXISTS vehicles (
+    vin TEXT PRIMARY KEY,
+    owner_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    brand_name TEXT,
+    model_name TEXT,
+    battery_level INTEGER DEFAULT 100,
+    range_km INTEGER DEFAULT 400,
+    os_version TEXT DEFAULT '1.0.0',
+    is_locked BOOLEAN DEFAULT 1,
+    is_charging BOOLEAN DEFAULT 0,
+    climate_state BOOLEAN DEFAULT 0,
+    location_name TEXT DEFAULT 'Dakar',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    last_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_vehicles_owner ON vehicles(owner_id);
+-- 3. FEATURES (Catalog)
+CREATE TABLE IF NOT EXISTS features (
+    feature_id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    price_amount DECIMAL(10, 2) NOT NULL,
+    currency TEXT DEFAULT 'FCFA',
+    payment_type TEXT, -- 'one-time', 'subscription'
+    billing_interval TEXT, -- 'monthly', null
+    is_active BOOLEAN DEFAULT 1,
+    is_visible BOOLEAN DEFAULT 1,
+    image_url TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+-- 4. SUBSCRIPTIONS (Purchases)
+CREATE TABLE IF NOT EXISTS subscriptions (
+    subscription_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    vehicle_vin TEXT REFERENCES vehicles(vin) ON DELETE CASCADE,
+    feature_id TEXT REFERENCES features(feature_id),
+    status TEXT DEFAULT 'active',
+    start_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    expires_at DATETIME,
+    auto_renew BOOLEAN DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_vehicle ON subscriptions(vehicle_vin);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);
+-- 5. FEATURE ACTIVATIONS
+CREATE TABLE IF NOT EXISTS feature_activations (
+    activation_id TEXT PRIMARY KEY,
+    subscription_id INTEGER REFERENCES subscriptions(subscription_id) ON DELETE CASCADE,
+    vehicle_vin TEXT REFERENCES vehicles(vin) ON DELETE CASCADE,
+    feature_id TEXT REFERENCES features(feature_id),
+    activation_status TEXT DEFAULT 'ACTIVE',
+    target_status TEXT DEFAULT 'ACTIVE',
+    activation_request_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    activation_start_time DATETIME,
+    activation_end_time DATETIME,
+    requested_by INTEGER REFERENCES users(user_id),
+    request_source TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_activations_vehicle ON feature_activations(vehicle_vin);
+CREATE INDEX IF NOT EXISTS idx_activations_subscription ON feature_activations(subscription_id);
+-- 6. PAYMENTS (For tracking payment transactions)
+CREATE TABLE IF NOT EXISTS payments (
+    payment_id TEXT PRIMARY KEY,
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    feature_id TEXT REFERENCES features(feature_id),
+    subscription_id INTEGER REFERENCES subscriptions(subscription_id),
+    operator TEXT, -- 'ORANGE', 'WAVE', etc.
+    phone_number TEXT,
+    amount DECIMAL(10, 2) NOT NULL,
+    currency TEXT DEFAULT 'FCFA',
+    status TEXT DEFAULT 'PENDING', -- 'PENDING', 'PAID', 'FAILED'
+    transaction_ref TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id);
+CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
+-- 7. ANALYTICS VIEWS
+DROP VIEW IF EXISTS revenue_analytics_view;
+CREATE VIEW revenue_analytics_view AS
+    SELECT f.feature_id, f.name, f.price_amount, 
+           COUNT(s.subscription_id) as active_subscriptions, 
+           (f.price_amount * COUNT(s.subscription_id)) as total_revenue
+    FROM features f
+    LEFT JOIN subscriptions s ON f.feature_id = s.feature_id AND s.status = 'active'
+    GROUP BY f.feature_id, f.name, f.price_amount;
+DROP VIEW IF EXISTS vehicle_status_view;
+CREATE VIEW vehicle_status_view AS
+    SELECT vin, model_name, 
+           CASE WHEN last_seen > datetime('now', '-1 hour') THEN 'connected' ELSE 'offline' END as connectivity_status
+    FROM vehicles;
+-- 8. SEED DATA
+-- Default Admin: admin@kemet.com / admin123
+INSERT OR IGNORE INTO users (email, password_hash, first_name, last_name, account_status, role) VALUES 
+('admin@kemet.com', '$2b$10$gkQWPsEU8cYWUxdtuyC9PedDwWQEK9gR4c9MQHNxXz496bMD23k6.', 'Admin', 'Kemet', 'ACTIVE', 'admin');
+-- Default Features
+INSERT OR IGNORE INTO features (feature_id, name, description, price_amount, payment_type, billing_interval) VALUES 
+('premium-connect', 'Connectivité Premium', 'Accès streaming, cartes satellite et navigation en temps réel', 2500, 'subscription', 'monthly'),
+('acceleration-boost', 'Acceleration Boost', 'Réduction du 0-100 km/h de 4.4s à 3.9s', 1500000, 'one-time', NULL),
+('sentry-mode', 'Mode Sentinelle', 'Sécurité active avec enregistrement vidéo 360°', 5000, 'subscription', 'monthly'),
+('cold-weather-pack', 'Pack Hiver', 'Sièges et volant chauffants toutes places', 250000, 'one-time', NULL);
+-- 9. FOTA TABLES
+CREATE TABLE IF NOT EXISTS fota_campaigns (
+    campaign_id TEXT PRIMARY KEY,
+    campaign_name TEXT NOT NULL,
+    version TEXT NOT NULL,
+    description TEXT,
+    release_notes TEXT,
+    campaign_type TEXT DEFAULT 'SCHEDULED',
+    priority INTEGER DEFAULT 3,
+    rollout_strategy TEXT DEFAULT 'PHASED',
+    scheduled_start DATETIME,
+    status TEXT DEFAULT 'available',
+    size_mb INTEGER,
+    is_critical BOOLEAN DEFAULT 0,
+    created_by INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS vehicle_updates (
+    update_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    vehicle_vin TEXT REFERENCES vehicles(vin) ON DELETE CASCADE,
+    campaign_id TEXT REFERENCES fota_campaigns(campaign_id),
+    status TEXT DEFAULT 'available', -- 'available', 'downloading', 'installing', 'completed', 'failed'
+    progress INTEGER DEFAULT 0,
+    installed_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+-- Seed FOTA
+INSERT OR IGNORE INTO fota_campaigns (campaign_id, campaign_name, version, description, release_notes, size_mb, is_critical, status) VALUES 
+('v1.1.0-release', 'Version 1.1.0', '1.1.0', 'Mise à jour de performance', 'Amélioration de la gestion batterie et nouvelles icônes.', 450, 0, 'COMPLETED');
+-- Service & Support Requests
+CREATE TABLE IF NOT EXISTS service_requests (
+    request_id TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    type TEXT NOT NULL, -- 'SUPPORT', 'SERVICE', 'FEATURE', 'BUG'
+    subject TEXT NOT NULL,
+    description TEXT NOT NULL,
+    status TEXT DEFAULT 'OPEN', -- 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'
+    priority TEXT DEFAULT 'MEDIUM', -- 'LOW', 'MEDIUM', 'HIGH', 'URGENT'
+    admin_notes TEXT,
+    ai_analysis TEXT, -- Stores AI proposed solutions for developers
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+-- Seed some initial requests for demo
+INSERT OR IGNORE INTO service_requests (request_id, user_id, type, subject, description, status, priority, ai_analysis)
+VALUES 
+('req1', 1, 'BUG', 'Problème de charge', 'Ma voiture ne dépasse pas les 80% de charge sur les bornes rapides.', 'OPEN', 'HIGH', '{"solution": "Vérifier les limites de charge logicielle et l''état de santé des cellules (SOH). Une mise à jour du BMS pourrait être nécessaire."}'),
+('req2', 1, 'FEATURE', 'Mode Sommeil', 'Serait-il possible d''ajouter un mode pour dormir dans la voiture avec la clim ?', 'IN_PROGRESS', 'MEDIUM', '{"solution": "Implémenter une boucle de contrôle thermique à faible bruit et désactiver les capteurs de mouvement internes pendant l''activation."}');
+✅ SQLite Database initialized successfully
+🔐 JWT Secret initialized: kemet...
+🤖 Kemet AI Service initialized | Provider: groq | Model: llama-3.3-70b-versatile | Key: gsk_7DztGB...
+
+╔═══════════════════════════════════════════════╗
+║                                               ║
+║        🚗 KEMET API Server                    ║
+║                                               ║
+║        Port: 5001                             ║
+║        Environment: development              ║
+║                                               ║
+║        Endpoints disponibles:                 ║
+║        • POST /api/auth/login                 ║
+║        • POST /api/auth/register              ║
+║        • GET  /api/vehicles/:id               ║
+║        • GET  /api/store/features             ║
+║        • GET  /api/updates                    ║
+║        • GET  /api/analytics/overview         ║
+║                                               ║
+╚═══════════════════════════════════════════════╝
+  
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node backend/src/server.js`[39m
+[dotenv@17.2.3] injecting env (10) from backend/src/.env -- tip: 🔄 add secrets lifecycle management: https://dotenvx.com/ops
+PRAGMA foreign_keys = ON
+-- Kemet SDV - SQLite Schema Init
+
+-- 1. USERS
+CREATE TABLE IF NOT EXISTS users (
+    user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    first_name TEXT,
+    last_name TEXT,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    phone_number TEXT,
+    account_status TEXT DEFAULT 'ACTIVE',
+    verified_email BOOLEAN DEFAULT 0,
+    role TEXT DEFAULT 'user',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+-- 2. VEHICLES
+CREATE TABLE IF NOT EXISTS vehicles (
+    vin TEXT PRIMARY KEY,
+    owner_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    brand_name TEXT,
+    model_name TEXT,
+    battery_level INTEGER DEFAULT 100,
+    range_km INTEGER DEFAULT 400,
+    os_version TEXT DEFAULT '1.0.0',
+    is_locked BOOLEAN DEFAULT 1,
+    is_charging BOOLEAN DEFAULT 0,
+    climate_state BOOLEAN DEFAULT 0,
+    location_name TEXT DEFAULT 'Dakar',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    last_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_vehicles_owner ON vehicles(owner_id);
+-- 3. FEATURES (Catalog)
+CREATE TABLE IF NOT EXISTS features (
+    feature_id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    price_amount DECIMAL(10, 2) NOT NULL,
+    currency TEXT DEFAULT 'FCFA',
+    payment_type TEXT, -- 'one-time', 'subscription'
+    billing_interval TEXT, -- 'monthly', null
+    is_active BOOLEAN DEFAULT 1,
+    is_visible BOOLEAN DEFAULT 1,
+    image_url TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+-- 4. SUBSCRIPTIONS (Purchases)
+CREATE TABLE IF NOT EXISTS subscriptions (
+    subscription_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    vehicle_vin TEXT REFERENCES vehicles(vin) ON DELETE CASCADE,
+    feature_id TEXT REFERENCES features(feature_id),
+    status TEXT DEFAULT 'active',
+    start_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    expires_at DATETIME,
+    auto_renew BOOLEAN DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_vehicle ON subscriptions(vehicle_vin);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);
+-- 5. FEATURE ACTIVATIONS
+CREATE TABLE IF NOT EXISTS feature_activations (
+    activation_id TEXT PRIMARY KEY,
+    subscription_id INTEGER REFERENCES subscriptions(subscription_id) ON DELETE CASCADE,
+    vehicle_vin TEXT REFERENCES vehicles(vin) ON DELETE CASCADE,
+    feature_id TEXT REFERENCES features(feature_id),
+    activation_status TEXT DEFAULT 'ACTIVE',
+    target_status TEXT DEFAULT 'ACTIVE',
+    activation_request_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    activation_start_time DATETIME,
+    activation_end_time DATETIME,
+    requested_by INTEGER REFERENCES users(user_id),
+    request_source TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_activations_vehicle ON feature_activations(vehicle_vin);
+CREATE INDEX IF NOT EXISTS idx_activations_subscription ON feature_activations(subscription_id);
+-- 6. PAYMENTS (For tracking payment transactions)
+CREATE TABLE IF NOT EXISTS payments (
+    payment_id TEXT PRIMARY KEY,
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    feature_id TEXT REFERENCES features(feature_id),
+    subscription_id INTEGER REFERENCES subscriptions(subscription_id),
+    operator TEXT, -- 'ORANGE', 'WAVE', etc.
+    phone_number TEXT,
+    amount DECIMAL(10, 2) NOT NULL,
+    currency TEXT DEFAULT 'FCFA',
+    status TEXT DEFAULT 'PENDING', -- 'PENDING', 'PAID', 'FAILED'
+    transaction_ref TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id);
+CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
+-- 7. ANALYTICS VIEWS
+DROP VIEW IF EXISTS revenue_analytics_view;
+CREATE VIEW revenue_analytics_view AS
+    SELECT f.feature_id, f.name, f.price_amount, 
+           COUNT(s.subscription_id) as active_subscriptions, 
+           (f.price_amount * COUNT(s.subscription_id)) as total_revenue
+    FROM features f
+    LEFT JOIN subscriptions s ON f.feature_id = s.feature_id AND s.status = 'active'
+    GROUP BY f.feature_id, f.name, f.price_amount;
+[32m[nodemon] restarting due to changes...[39m
+DROP VIEW IF EXISTS vehicle_status_view;
+CREATE VIEW vehicle_status_view AS
+    SELECT vin, model_name, 
+           CASE WHEN last_seen > datetime('now', '-1 hour') THEN 'connected' ELSE 'offline' END as connectivity_status
+    FROM vehicles;
+-- 8. SEED DATA
+-- Default Admin: admin@kemet.com / admin123
+INSERT OR IGNORE INTO users (email, password_hash, first_name, last_name, account_status, role) VALUES 
+('admin@kemet.com', '$2b$10$gkQWPsEU8cYWUxdtuyC9PedDwWQEK9gR4c9MQHNxXz496bMD23k6.', 'Admin', 'Kemet', 'ACTIVE', 'admin');
+-- Default Features
+INSERT OR IGNORE INTO features (feature_id, name, description, price_amount, payment_type, billing_interval) VALUES 
+('premium-connect', 'Connectivité Premium', 'Accès streaming, cartes satellite et navigation en temps réel', 2500, 'subscription', 'monthly'),
+('acceleration-boost', 'Acceleration Boost', 'Réduction du 0-100 km/h de 4.4s à 3.9s', 1500000, 'one-time', NULL),
+('sentry-mode', 'Mode Sentinelle', 'Sécurité active avec enregistrement vidéo 360°', 5000, 'subscription', 'monthly'),
+('cold-weather-pack', 'Pack Hiver', 'Sièges et volant chauffants toutes places', 250000, 'one-time', NULL);
+-- 9. FOTA TABLES
+CREATE TABLE IF NOT EXISTS fota_campaigns (
+    campaign_id TEXT PRIMARY KEY,
+    campaign_name TEXT NOT NULL,
+    version TEXT NOT NULL,
+    description TEXT,
+    release_notes TEXT,
+    campaign_type TEXT DEFAULT 'SCHEDULED',
+    priority INTEGER DEFAULT 3,
+    rollout_strategy TEXT DEFAULT 'PHASED',
+    scheduled_start DATETIME,
+    status TEXT DEFAULT 'available',
+    size_mb INTEGER,
+    is_critical BOOLEAN DEFAULT 0,
+    created_by INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS vehicle_updates (
+    update_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    vehicle_vin TEXT REFERENCES vehicles(vin) ON DELETE CASCADE,
+    campaign_id TEXT REFERENCES fota_campaigns(campaign_id),
+    status TEXT DEFAULT 'available', -- 'available', 'downloading', 'installing', 'completed', 'failed'
+    progress INTEGER DEFAULT 0,
+    installed_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+-- Seed FOTA
+INSERT OR IGNORE INTO fota_campaigns (campaign_id, campaign_name, version, description, release_notes, size_mb, is_critical, status) VALUES 
+('v1.1.0-release', 'Version 1.1.0', '1.1.0', 'Mise à jour de performance', 'Amélioration de la gestion batterie et nouvelles icônes.', 450, 0, 'COMPLETED');
+-- Service & Support Requests
+CREATE TABLE IF NOT EXISTS service_requests (
+    request_id TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    type TEXT NOT NULL, -- 'SUPPORT', 'SERVICE', 'FEATURE', 'BUG'
+    subject TEXT NOT NULL,
+    description TEXT NOT NULL,
+    status TEXT DEFAULT 'OPEN', -- 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'
+    priority TEXT DEFAULT 'MEDIUM', -- 'LOW', 'MEDIUM', 'HIGH', 'URGENT'
+    admin_notes TEXT,
+    ai_analysis TEXT, -- Stores AI proposed solutions for developers
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+-- Seed some initial requests for demo
+INSERT OR IGNORE INTO service_requests (request_id, user_id, type, subject, description, status, priority, ai_analysis)
+VALUES 
+('req1', 1, 'BUG', 'Problème de charge', 'Ma voiture ne dépasse pas les 80% de charge sur les bornes rapides.', 'OPEN', 'HIGH', '{"solution": "Vérifier les limites de charge logicielle et l''état de santé des cellules (SOH). Une mise à jour du BMS pourrait être nécessaire."}'),
+('req2', 1, 'FEATURE', 'Mode Sommeil', 'Serait-il possible d''ajouter un mode pour dormir dans la voiture avec la clim ?', 'IN_PROGRESS', 'MEDIUM', '{"solution": "Implémenter une boucle de contrôle thermique à faible bruit et désactiver les capteurs de mouvement internes pendant l''activation."}');
+[32m[nodemon] starting `node backend/src/server.js`[39m
+[dotenv@17.2.3] injecting env (10) from backend/src/.env -- tip: 🔄 add secrets lifecycle management: https://dotenvx.com/ops
+PRAGMA foreign_keys = ON
+-- Kemet SDV - SQLite Schema Init
+
+-- 1. USERS
+CREATE TABLE IF NOT EXISTS users (
+    user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    first_name TEXT,
+    last_name TEXT,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    phone_number TEXT,
+    account_status TEXT DEFAULT 'ACTIVE',
+    verified_email BOOLEAN DEFAULT 0,
+    role TEXT DEFAULT 'user',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+-- 2. VEHICLES
+CREATE TABLE IF NOT EXISTS vehicles (
+    vin TEXT PRIMARY KEY,
+    owner_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    brand_name TEXT,
+    model_name TEXT,
+    battery_level INTEGER DEFAULT 100,
+    range_km INTEGER DEFAULT 400,
+    os_version TEXT DEFAULT '1.0.0',
+    is_locked BOOLEAN DEFAULT 1,
+    is_charging BOOLEAN DEFAULT 0,
+    climate_state BOOLEAN DEFAULT 0,
+    location_name TEXT DEFAULT 'Dakar',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    last_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_vehicles_owner ON vehicles(owner_id);
+-- 3. FEATURES (Catalog)
+CREATE TABLE IF NOT EXISTS features (
+    feature_id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    price_amount DECIMAL(10, 2) NOT NULL,
+    currency TEXT DEFAULT 'FCFA',
+    payment_type TEXT, -- 'one-time', 'subscription'
+    billing_interval TEXT, -- 'monthly', null
+    is_active BOOLEAN DEFAULT 1,
+    is_visible BOOLEAN DEFAULT 1,
+    image_url TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+-- 4. SUBSCRIPTIONS (Purchases)
+CREATE TABLE IF NOT EXISTS subscriptions (
+    subscription_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    vehicle_vin TEXT REFERENCES vehicles(vin) ON DELETE CASCADE,
+    feature_id TEXT REFERENCES features(feature_id),
+    status TEXT DEFAULT 'active',
+    start_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    expires_at DATETIME,
+    auto_renew BOOLEAN DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_vehicle ON subscriptions(vehicle_vin);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);
+-- 5. FEATURE ACTIVATIONS
+CREATE TABLE IF NOT EXISTS feature_activations (
+    activation_id TEXT PRIMARY KEY,
+    subscription_id INTEGER REFERENCES subscriptions(subscription_id) ON DELETE CASCADE,
+    vehicle_vin TEXT REFERENCES vehicles(vin) ON DELETE CASCADE,
+    feature_id TEXT REFERENCES features(feature_id),
+    activation_status TEXT DEFAULT 'ACTIVE',
+    target_status TEXT DEFAULT 'ACTIVE',
+    activation_request_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    activation_start_time DATETIME,
+    activation_end_time DATETIME,
+    requested_by INTEGER REFERENCES users(user_id),
+    request_source TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_activations_vehicle ON feature_activations(vehicle_vin);
+CREATE INDEX IF NOT EXISTS idx_activations_subscription ON feature_activations(subscription_id);
+-- 6. PAYMENTS (For tracking payment transactions)
+CREATE TABLE IF NOT EXISTS payments (
+    payment_id TEXT PRIMARY KEY,
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    feature_id TEXT REFERENCES features(feature_id),
+    subscription_id INTEGER REFERENCES subscriptions(subscription_id),
+    operator TEXT, -- 'ORANGE', 'WAVE', etc.
+    phone_number TEXT,
+    amount DECIMAL(10, 2) NOT NULL,
+    currency TEXT DEFAULT 'FCFA',
+    status TEXT DEFAULT 'PENDING', -- 'PENDING', 'PAID', 'FAILED'
+    transaction_ref TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id);
+CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
+-- 7. ANALYTICS VIEWS
+DROP VIEW IF EXISTS revenue_analytics_view;
+CREATE VIEW revenue_analytics_view AS
+    SELECT f.feature_id, f.name, f.price_amount, 
+           COUNT(s.subscription_id) as active_subscriptions, 
+           (f.price_amount * COUNT(s.subscription_id)) as total_revenue
+    FROM features f
+    LEFT JOIN subscriptions s ON f.feature_id = s.feature_id AND s.status = 'active'
+    GROUP BY f.feature_id, f.name, f.price_amount;
+DROP VIEW IF EXISTS vehicle_status_view;
+CREATE VIEW vehicle_status_view AS
+    SELECT vin, model_name, 
+           CASE WHEN last_seen > datetime('now', '-1 hour') THEN 'connected' ELSE 'offline' END as connectivity_status
+    FROM vehicles;
+-- 8. SEED DATA
+-- Default Admin: admin@kemet.com / admin123
+INSERT OR IGNORE INTO users (email, password_hash, first_name, last_name, account_status, role) VALUES 
+('admin@kemet.com', '$2b$10$gkQWPsEU8cYWUxdtuyC9PedDwWQEK9gR4c9MQHNxXz496bMD23k6.', 'Admin', 'Kemet', 'ACTIVE', 'admin');
+-- Default Features
+INSERT OR IGNORE INTO features (feature_id, name, description, price_amount, payment_type, billing_interval) VALUES 
+('premium-connect', 'Connectivité Premium', 'Accès streaming, cartes satellite et navigation en temps réel', 2500, 'subscription', 'monthly'),
+('acceleration-boost', 'Acceleration Boost', 'Réduction du 0-100 km/h de 4.4s à 3.9s', 1500000, 'one-time', NULL),
+('sentry-mode', 'Mode Sentinelle', 'Sécurité active avec enregistrement vidéo 360°', 5000, 'subscription', 'monthly'),
+('cold-weather-pack', 'Pack Hiver', 'Sièges et volant chauffants toutes places', 250000, 'one-time', NULL);
+-- 9. FOTA TABLES
+CREATE TABLE IF NOT EXISTS fota_campaigns (
+    campaign_id TEXT PRIMARY KEY,
+    campaign_name TEXT NOT NULL,
+    version TEXT NOT NULL,
+    description TEXT,
+    release_notes TEXT,
+    campaign_type TEXT DEFAULT 'SCHEDULED',
+    priority INTEGER DEFAULT 3,
+    rollout_strategy TEXT DEFAULT 'PHASED',
+    scheduled_start DATETIME,
+    status TEXT DEFAULT 'available',
+    size_mb INTEGER,
+    is_critical BOOLEAN DEFAULT 0,
+    created_by INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS vehicle_updates (
+    update_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    vehicle_vin TEXT REFERENCES vehicles(vin) ON DELETE CASCADE,
+    campaign_id TEXT REFERENCES fota_campaigns(campaign_id),
+    status TEXT DEFAULT 'available', -- 'available', 'downloading', 'installing', 'completed', 'failed'
+    progress INTEGER DEFAULT 0,
+    installed_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+-- Seed FOTA
+INSERT OR IGNORE INTO fota_campaigns (campaign_id, campaign_name, version, description, release_notes, size_mb, is_critical, status) VALUES 
+('v1.1.0-release', 'Version 1.1.0', '1.1.0', 'Mise à jour de performance', 'Amélioration de la gestion batterie et nouvelles icônes.', 450, 0, 'COMPLETED');
+-- Service & Support Requests
+CREATE TABLE IF NOT EXISTS service_requests (
+    request_id TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    type TEXT NOT NULL, -- 'SUPPORT', 'SERVICE', 'FEATURE', 'BUG'
+    subject TEXT NOT NULL,
+    description TEXT NOT NULL,
+    status TEXT DEFAULT 'OPEN', -- 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'
+    priority TEXT DEFAULT 'MEDIUM', -- 'LOW', 'MEDIUM', 'HIGH', 'URGENT'
+    admin_notes TEXT,
+    ai_analysis TEXT, -- Stores AI proposed solutions for developers
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+-- Seed some initial requests for demo
+INSERT OR IGNORE INTO service_requests (request_id, user_id, type, subject, description, status, priority, ai_analysis)
+VALUES 
+('req1', 1, 'BUG', 'Problème de charge', 'Ma voiture ne dépasse pas les 80% de charge sur les bornes rapides.', 'OPEN', 'HIGH', '{"solution": "Vérifier les limites de charge logicielle et l''état de santé des cellules (SOH). Une mise à jour du BMS pourrait être nécessaire."}'),
+('req2', 1, 'FEATURE', 'Mode Sommeil', 'Serait-il possible d''ajouter un mode pour dormir dans la voiture avec la clim ?', 'IN_PROGRESS', 'MEDIUM', '{"solution": "Implémenter une boucle de contrôle thermique à faible bruit et désactiver les capteurs de mouvement internes pendant l''activation."}');
+✅ SQLite Database initialized successfully
+🔐 JWT Secret initialized: kemet...
+🤖 Kemet AI Service initialized | Provider: groq | Model: llama-3.3-70b-versatile | Key: gsk_7DztGB...
 node:events:497
       throw er; // Unhandled 'error' event
       ^
 
-Error: EBADF: bad file descriptor, read
-Emitted 'error' event on ReadStream instance at:
-    at emitErrorNT (node:internal/streams/destroy:170:8)
-    at errorOrDestroy (node:internal/streams/destroy:239:7)
-    at node:internal/fs/streams:275:9
-    at FSReqCallback.wrapper [as oncomplete] (node:fs:671:5) {
-  errno: -9,
-  code: 'EBADF',
-  syscall: 'read'
+Error: listen EADDRINUSE: address already in use :::5001
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at Server.listen (node:net:2102:7)
+    at Function.listen (/home/promis/new_softride/SoftRide/node_modules/express/lib/application.js:635:24)
+    at Object.<anonymous> (/home/promis/new_softride/SoftRide/backend/src/server.js:58:5)
+    at Module._compile (node:internal/modules/cjs/loader:1706:14)
+    at Object..js (node:internal/modules/cjs/loader:1839:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1976:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 5001
 }
 
 Node.js v22.20.0
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node backend/src/server.js`[39m
+[dotenv@17.2.3] injecting env (10) from backend/src/.env -- tip: 🗂️ backup and recover secrets: https://dotenvx.com/ops
+PRAGMA foreign_keys = ON
+-- Kemet SDV - SQLite Schema Init
+
+-- 1. USERS
+CREATE TABLE IF NOT EXISTS users (
+    user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    first_name TEXT,
+    last_name TEXT,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    phone_number TEXT,
+    account_status TEXT DEFAULT 'ACTIVE',
+    verified_email BOOLEAN DEFAULT 0,
+    role TEXT DEFAULT 'user',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+-- 2. VEHICLES
+CREATE TABLE IF NOT EXISTS vehicles (
+    vin TEXT PRIMARY KEY,
+    owner_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    brand_name TEXT,
+    model_name TEXT,
+    battery_level INTEGER DEFAULT 100,
+    range_km INTEGER DEFAULT 400,
+    os_version TEXT DEFAULT '1.0.0',
+    is_locked BOOLEAN DEFAULT 1,
+    is_charging BOOLEAN DEFAULT 0,
+    climate_state BOOLEAN DEFAULT 0,
+    location_name TEXT DEFAULT 'Dakar',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    last_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_vehicles_owner ON vehicles(owner_id);
+-- 3. FEATURES (Catalog)
+CREATE TABLE IF NOT EXISTS features (
+    feature_id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    price_amount DECIMAL(10, 2) NOT NULL,
+    currency TEXT DEFAULT 'FCFA',
+    payment_type TEXT, -- 'one-time', 'subscription'
+    billing_interval TEXT, -- 'monthly', null
+    is_active BOOLEAN DEFAULT 1,
+    is_visible BOOLEAN DEFAULT 1,
+    image_url TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+-- 4. SUBSCRIPTIONS (Purchases)
+CREATE TABLE IF NOT EXISTS subscriptions (
+    subscription_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    vehicle_vin TEXT REFERENCES vehicles(vin) ON DELETE CASCADE,
+    feature_id TEXT REFERENCES features(feature_id),
+    status TEXT DEFAULT 'active',
+    start_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    expires_at DATETIME,
+    auto_renew BOOLEAN DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_vehicle ON subscriptions(vehicle_vin);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);
+-- 5. FEATURE ACTIVATIONS
+CREATE TABLE IF NOT EXISTS feature_activations (
+    activation_id TEXT PRIMARY KEY,
+    subscription_id INTEGER REFERENCES subscriptions(subscription_id) ON DELETE CASCADE,
+    vehicle_vin TEXT REFERENCES vehicles(vin) ON DELETE CASCADE,
+    feature_id TEXT REFERENCES features(feature_id),
+    activation_status TEXT DEFAULT 'ACTIVE',
+    target_status TEXT DEFAULT 'ACTIVE',
+    activation_request_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    activation_start_time DATETIME,
+    activation_end_time DATETIME,
+    requested_by INTEGER REFERENCES users(user_id),
+    request_source TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_activations_vehicle ON feature_activations(vehicle_vin);
+CREATE INDEX IF NOT EXISTS idx_activations_subscription ON feature_activations(subscription_id);
+-- 6. PAYMENTS (For tracking payment transactions)
+CREATE TABLE IF NOT EXISTS payments (
+    payment_id TEXT PRIMARY KEY,
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    feature_id TEXT REFERENCES features(feature_id),
+    subscription_id INTEGER REFERENCES subscriptions(subscription_id),
+    operator TEXT, -- 'ORANGE', 'WAVE', etc.
+    phone_number TEXT,
+    amount DECIMAL(10, 2) NOT NULL,
+    currency TEXT DEFAULT 'FCFA',
+    status TEXT DEFAULT 'PENDING', -- 'PENDING', 'PAID', 'FAILED'
+    transaction_ref TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id);
+CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
+-- 7. ANALYTICS VIEWS
+DROP VIEW IF EXISTS revenue_analytics_view;
+CREATE VIEW revenue_analytics_view AS
+    SELECT f.feature_id, f.name, f.price_amount, 
+           COUNT(s.subscription_id) as active_subscriptions, 
+           (f.price_amount * COUNT(s.subscription_id)) as total_revenue
+    FROM features f
+    LEFT JOIN subscriptions s ON f.feature_id = s.feature_id AND s.status = 'active'
+    GROUP BY f.feature_id, f.name, f.price_amount;
+DROP VIEW IF EXISTS vehicle_status_view;
+CREATE VIEW vehicle_status_view AS
+    SELECT vin, model_name, 
+           CASE WHEN last_seen > datetime('now', '-1 hour') THEN 'connected' ELSE 'offline' END as connectivity_status
+    FROM vehicles;
+-- 8. SEED DATA
+-- Default Admin: admin@kemet.com / admin123
+INSERT OR IGNORE INTO users (email, password_hash, first_name, last_name, account_status, role) VALUES 
+('admin@kemet.com', '$2b$10$gkQWPsEU8cYWUxdtuyC9PedDwWQEK9gR4c9MQHNxXz496bMD23k6.', 'Admin', 'Kemet', 'ACTIVE', 'admin');
+-- Default Features
+INSERT OR IGNORE INTO features (feature_id, name, description, price_amount, payment_type, billing_interval) VALUES 
+('premium-connect', 'Connectivité Premium', 'Accès streaming, cartes satellite et navigation en temps réel', 2500, 'subscription', 'monthly'),
+('acceleration-boost', 'Acceleration Boost', 'Réduction du 0-100 km/h de 4.4s à 3.9s', 1500000, 'one-time', NULL),
+('sentry-mode', 'Mode Sentinelle', 'Sécurité active avec enregistrement vidéo 360°', 5000, 'subscription', 'monthly'),
+('cold-weather-pack', 'Pack Hiver', 'Sièges et volant chauffants toutes places', 250000, 'one-time', NULL);
+-- 9. FOTA TABLES
+CREATE TABLE IF NOT EXISTS fota_campaigns (
+    campaign_id TEXT PRIMARY KEY,
+    campaign_name TEXT NOT NULL,
+    version TEXT NOT NULL,
+    description TEXT,
+    release_notes TEXT,
+    campaign_type TEXT DEFAULT 'SCHEDULED',
+    priority INTEGER DEFAULT 3,
+    rollout_strategy TEXT DEFAULT 'PHASED',
+    scheduled_start DATETIME,
+    status TEXT DEFAULT 'available',
+    size_mb INTEGER,
+    is_critical BOOLEAN DEFAULT 0,
+    created_by INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS vehicle_updates (
+    update_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    vehicle_vin TEXT REFERENCES vehicles(vin) ON DELETE CASCADE,
+    campaign_id TEXT REFERENCES fota_campaigns(campaign_id),
+    status TEXT DEFAULT 'available', -- 'available', 'downloading', 'installing', 'completed', 'failed'
+    progress INTEGER DEFAULT 0,
+    installed_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+-- Seed FOTA
+INSERT OR IGNORE INTO fota_campaigns (campaign_id, campaign_name, version, description, release_notes, size_mb, is_critical, status) VALUES 
+('v1.1.0-release', 'Version 1.1.0', '1.1.0', 'Mise à jour de performance', 'Amélioration de la gestion batterie et nouvelles icônes.', 450, 0, 'COMPLETED');
+-- Service & Support Requests
+CREATE TABLE IF NOT EXISTS service_requests (
+    request_id TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    type TEXT NOT NULL, -- 'SUPPORT', 'SERVICE', 'FEATURE', 'BUG'
+    subject TEXT NOT NULL,
+    description TEXT NOT NULL,
+    status TEXT DEFAULT 'OPEN', -- 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'
+    priority TEXT DEFAULT 'MEDIUM', -- 'LOW', 'MEDIUM', 'HIGH', 'URGENT'
+    admin_notes TEXT,
+    ai_analysis TEXT, -- Stores AI proposed solutions for developers
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+-- Seed some initial requests for demo
+INSERT OR IGNORE INTO service_requests (request_id, user_id, type, subject, description, status, priority, ai_analysis)
+VALUES 
+('req1', 1, 'BUG', 'Problème de charge', 'Ma voiture ne dépasse pas les 80% de charge sur les bornes rapides.', 'OPEN', 'HIGH', '{"solution": "Vérifier les limites de charge logicielle et l''état de santé des cellules (SOH). Une mise à jour du BMS pourrait être nécessaire."}'),
+('req2', 1, 'FEATURE', 'Mode Sommeil', 'Serait-il possible d''ajouter un mode pour dormir dans la voiture avec la clim ?', 'IN_PROGRESS', 'MEDIUM', '{"solution": "Implémenter une boucle de contrôle thermique à faible bruit et désactiver les capteurs de mouvement internes pendant l''activation."}');
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node backend/src/server.js`[39m
+[dotenv@17.2.3] injecting env (10) from backend/src/.env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+PRAGMA foreign_keys = ON
+-- Kemet SDV - SQLite Schema Init
+
+-- 1. USERS
+CREATE TABLE IF NOT EXISTS users (
+    user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    first_name TEXT,
+    last_name TEXT,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    phone_number TEXT,
+    account_status TEXT DEFAULT 'ACTIVE',
+    verified_email BOOLEAN DEFAULT 0,
+    role TEXT DEFAULT 'user',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+-- 2. VEHICLES
+CREATE TABLE IF NOT EXISTS vehicles (
+    vin TEXT PRIMARY KEY,
+    owner_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    brand_name TEXT,
+    model_name TEXT,
+    battery_level INTEGER DEFAULT 100,
+    range_km INTEGER DEFAULT 400,
+    os_version TEXT DEFAULT '1.0.0',
+    is_locked BOOLEAN DEFAULT 1,
+    is_charging BOOLEAN DEFAULT 0,
+    climate_state BOOLEAN DEFAULT 0,
+    location_name TEXT DEFAULT 'Dakar',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    last_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_vehicles_owner ON vehicles(owner_id);
+-- 3. FEATURES (Catalog)
+CREATE TABLE IF NOT EXISTS features (
+    feature_id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    price_amount DECIMAL(10, 2) NOT NULL,
+    currency TEXT DEFAULT 'FCFA',
+    payment_type TEXT, -- 'one-time', 'subscription'
+    billing_interval TEXT, -- 'monthly', null
+    is_active BOOLEAN DEFAULT 1,
+    is_visible BOOLEAN DEFAULT 1,
+    image_url TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+-- 4. SUBSCRIPTIONS (Purchases)
+CREATE TABLE IF NOT EXISTS subscriptions (
+    subscription_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    vehicle_vin TEXT REFERENCES vehicles(vin) ON DELETE CASCADE,
+    feature_id TEXT REFERENCES features(feature_id),
+    status TEXT DEFAULT 'active',
+    start_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    expires_at DATETIME,
+    auto_renew BOOLEAN DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_vehicle ON subscriptions(vehicle_vin);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);
+-- 5. FEATURE ACTIVATIONS
+CREATE TABLE IF NOT EXISTS feature_activations (
+    activation_id TEXT PRIMARY KEY,
+    subscription_id INTEGER REFERENCES subscriptions(subscription_id) ON DELETE CASCADE,
+    vehicle_vin TEXT REFERENCES vehicles(vin) ON DELETE CASCADE,
+    feature_id TEXT REFERENCES features(feature_id),
+    activation_status TEXT DEFAULT 'ACTIVE',
+    target_status TEXT DEFAULT 'ACTIVE',
+    activation_request_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    activation_start_time DATETIME,
+    activation_end_time DATETIME,
+    requested_by INTEGER REFERENCES users(user_id),
+    request_source TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_activations_vehicle ON feature_activations(vehicle_vin);
+CREATE INDEX IF NOT EXISTS idx_activations_subscription ON feature_activations(subscription_id);
+-- 6. PAYMENTS (For tracking payment transactions)
+CREATE TABLE IF NOT EXISTS payments (
+    payment_id TEXT PRIMARY KEY,
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    feature_id TEXT REFERENCES features(feature_id),
+    subscription_id INTEGER REFERENCES subscriptions(subscription_id),
+    operator TEXT, -- 'ORANGE', 'WAVE', etc.
+    phone_number TEXT,
+    amount DECIMAL(10, 2) NOT NULL,
+    currency TEXT DEFAULT 'FCFA',
+    status TEXT DEFAULT 'PENDING', -- 'PENDING', 'PAID', 'FAILED'
+    transaction_ref TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id);
+CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
+-- 7. ANALYTICS VIEWS
+DROP VIEW IF EXISTS revenue_analytics_view;
+CREATE VIEW revenue_analytics_view AS
+    SELECT f.feature_id, f.name, f.price_amount, 
+           COUNT(s.subscription_id) as active_subscriptions, 
+           (f.price_amount * COUNT(s.subscription_id)) as total_revenue
+    FROM features f
+    LEFT JOIN subscriptions s ON f.feature_id = s.feature_id AND s.status = 'active'
+    GROUP BY f.feature_id, f.name, f.price_amount;
+DROP VIEW IF EXISTS vehicle_status_view;
+CREATE VIEW vehicle_status_view AS
+    SELECT vin, model_name, 
+           CASE WHEN last_seen > datetime('now', '-1 hour') THEN 'connected' ELSE 'offline' END as connectivity_status
+    FROM vehicles;
+-- 8. SEED DATA
+-- Default Admin: admin@kemet.com / admin123
+INSERT OR IGNORE INTO users (email, password_hash, first_name, last_name, account_status, role) VALUES 
+('admin@kemet.com', '$2b$10$gkQWPsEU8cYWUxdtuyC9PedDwWQEK9gR4c9MQHNxXz496bMD23k6.', 'Admin', 'Kemet', 'ACTIVE', 'admin');
+-- Default Features
+INSERT OR IGNORE INTO features (feature_id, name, description, price_amount, payment_type, billing_interval) VALUES 
+('premium-connect', 'Connectivité Premium', 'Accès streaming, cartes satellite et navigation en temps réel', 2500, 'subscription', 'monthly'),
+('acceleration-boost', 'Acceleration Boost', 'Réduction du 0-100 km/h de 4.4s à 3.9s', 1500000, 'one-time', NULL),
+('sentry-mode', 'Mode Sentinelle', 'Sécurité active avec enregistrement vidéo 360°', 5000, 'subscription', 'monthly'),
+('cold-weather-pack', 'Pack Hiver', 'Sièges et volant chauffants toutes places', 250000, 'one-time', NULL);
+-- 9. FOTA TABLES
+CREATE TABLE IF NOT EXISTS fota_campaigns (
+    campaign_id TEXT PRIMARY KEY,
+    campaign_name TEXT NOT NULL,
+    version TEXT NOT NULL,
+    description TEXT,
+    release_notes TEXT,
+    campaign_type TEXT DEFAULT 'SCHEDULED',
+    priority INTEGER DEFAULT 3,
+    rollout_strategy TEXT DEFAULT 'PHASED',
+    scheduled_start DATETIME,
+    status TEXT DEFAULT 'available',
+    size_mb INTEGER,
+    is_critical BOOLEAN DEFAULT 0,
+    created_by INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS vehicle_updates (
+    update_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    vehicle_vin TEXT REFERENCES vehicles(vin) ON DELETE CASCADE,
+    campaign_id TEXT REFERENCES fota_campaigns(campaign_id),
+    status TEXT DEFAULT 'available', -- 'available', 'downloading', 'installing', 'completed', 'failed'
+    progress INTEGER DEFAULT 0,
+    installed_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+-- Seed FOTA
+INSERT OR IGNORE INTO fota_campaigns (campaign_id, campaign_name, version, description, release_notes, size_mb, is_critical, status) VALUES 
+('v1.1.0-release', 'Version 1.1.0', '1.1.0', 'Mise à jour de performance', 'Amélioration de la gestion batterie et nouvelles icônes.', 450, 0, 'COMPLETED');
+-- Service & Support Requests
+CREATE TABLE IF NOT EXISTS service_requests (
+    request_id TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    type TEXT NOT NULL, -- 'SUPPORT', 'SERVICE', 'FEATURE', 'BUG'
+    subject TEXT NOT NULL,
+    description TEXT NOT NULL,
+    status TEXT DEFAULT 'OPEN', -- 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'
+    priority TEXT DEFAULT 'MEDIUM', -- 'LOW', 'MEDIUM', 'HIGH', 'URGENT'
+    admin_notes TEXT,
+    ai_analysis TEXT, -- Stores AI proposed solutions for developers
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+-- Seed some initial requests for demo
+INSERT OR IGNORE INTO service_requests (request_id, user_id, type, subject, description, status, priority, ai_analysis)
+VALUES 
+('req1', 1, 'BUG', 'Problème de charge', 'Ma voiture ne dépasse pas les 80% de charge sur les bornes rapides.', 'OPEN', 'HIGH', '{"solution": "Vérifier les limites de charge logicielle et l''état de santé des cellules (SOH). Une mise à jour du BMS pourrait être nécessaire."}'),
+('req2', 1, 'FEATURE', 'Mode Sommeil', 'Serait-il possible d''ajouter un mode pour dormir dans la voiture avec la clim ?', 'IN_PROGRESS', 'MEDIUM', '{"solution": "Implémenter une boucle de contrôle thermique à faible bruit et désactiver les capteurs de mouvement internes pendant l''activation."}');
+✅ SQLite Database initialized successfully
+🔐 JWT Secret initialized: kemet...
+🤖 Kemet AI Service initialized | Provider: groq | Model: llama-3.3-70b-versatile | Key: gsk_7DztGB...
+node:events:497
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5001
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at Server.listen (node:net:2102:7)
+    at Function.listen (/home/promis/new_softride/SoftRide/node_modules/express/lib/application.js:635:24)
+    at Object.<anonymous> (/home/promis/new_softride/SoftRide/backend/src/server.js:58:5)
+    at Module._compile (node:internal/modules/cjs/loader:1706:14)
+    at Object..js (node:internal/modules/cjs/loader:1839:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1976:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 5001
+}
+
+Node.js v22.20.0
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node backend/src/server.js`[39m
+[dotenv@17.2.3] injecting env (10) from backend/src/.env -- tip: ✅ audit secrets and track compliance: https://dotenvx.com/ops
+PRAGMA foreign_keys = ON
+-- Kemet SDV - SQLite Schema Init
+
+-- 1. USERS
+CREATE TABLE IF NOT EXISTS users (
+    user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    first_name TEXT,
+    last_name TEXT,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    phone_number TEXT,
+    account_status TEXT DEFAULT 'ACTIVE',
+    verified_email BOOLEAN DEFAULT 0,
+    role TEXT DEFAULT 'user',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+-- 2. VEHICLES
+CREATE TABLE IF NOT EXISTS vehicles (
+    vin TEXT PRIMARY KEY,
+    owner_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    brand_name TEXT,
+    model_name TEXT,
+    battery_level INTEGER DEFAULT 100,
+    range_km INTEGER DEFAULT 400,
+    os_version TEXT DEFAULT '1.0.0',
+    is_locked BOOLEAN DEFAULT 1,
+    is_charging BOOLEAN DEFAULT 0,
+    climate_state BOOLEAN DEFAULT 0,
+    location_name TEXT DEFAULT 'Dakar',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    last_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_vehicles_owner ON vehicles(owner_id);
+-- 3. FEATURES (Catalog)
+CREATE TABLE IF NOT EXISTS features (
+    feature_id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    price_amount DECIMAL(10, 2) NOT NULL,
+    currency TEXT DEFAULT 'FCFA',
+    payment_type TEXT, -- 'one-time', 'subscription'
+    billing_interval TEXT, -- 'monthly', null
+    is_active BOOLEAN DEFAULT 1,
+    is_visible BOOLEAN DEFAULT 1,
+    image_url TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+-- 4. SUBSCRIPTIONS (Purchases)
+CREATE TABLE IF NOT EXISTS subscriptions (
+    subscription_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    vehicle_vin TEXT REFERENCES vehicles(vin) ON DELETE CASCADE,
+    feature_id TEXT REFERENCES features(feature_id),
+    status TEXT DEFAULT 'active',
+    start_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    expires_at DATETIME,
+    auto_renew BOOLEAN DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_vehicle ON subscriptions(vehicle_vin);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);
+-- 5. FEATURE ACTIVATIONS
+CREATE TABLE IF NOT EXISTS feature_activations (
+    activation_id TEXT PRIMARY KEY,
+    subscription_id INTEGER REFERENCES subscriptions(subscription_id) ON DELETE CASCADE,
+    vehicle_vin TEXT REFERENCES vehicles(vin) ON DELETE CASCADE,
+    feature_id TEXT REFERENCES features(feature_id),
+    activation_status TEXT DEFAULT 'ACTIVE',
+    target_status TEXT DEFAULT 'ACTIVE',
+    activation_request_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    activation_start_time DATETIME,
+    activation_end_time DATETIME,
+    requested_by INTEGER REFERENCES users(user_id),
+    request_source TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_activations_vehicle ON feature_activations(vehicle_vin);
+CREATE INDEX IF NOT EXISTS idx_activations_subscription ON feature_activations(subscription_id);
+-- 6. PAYMENTS (For tracking payment transactions)
+CREATE TABLE IF NOT EXISTS payments (
+    payment_id TEXT PRIMARY KEY,
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    feature_id TEXT REFERENCES features(feature_id),
+    subscription_id INTEGER REFERENCES subscriptions(subscription_id),
+    operator TEXT, -- 'ORANGE', 'WAVE', etc.
+    phone_number TEXT,
+    amount DECIMAL(10, 2) NOT NULL,
+    currency TEXT DEFAULT 'FCFA',
+    status TEXT DEFAULT 'PENDING', -- 'PENDING', 'PAID', 'FAILED'
+    transaction_ref TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id);
+CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
+-- 7. ANALYTICS VIEWS
+DROP VIEW IF EXISTS revenue_analytics_view;
+CREATE VIEW revenue_analytics_view AS
+    SELECT f.feature_id, f.name, f.price_amount, 
+           COUNT(s.subscription_id) as active_subscriptions, 
+           (f.price_amount * COUNT(s.subscription_id)) as total_revenue
+    FROM features f
+    LEFT JOIN subscriptions s ON f.feature_id = s.feature_id AND s.status = 'active'
+    GROUP BY f.feature_id, f.name, f.price_amount;
+DROP VIEW IF EXISTS vehicle_status_view;
+CREATE VIEW vehicle_status_view AS
+    SELECT vin, model_name, 
+           CASE WHEN last_seen > datetime('now', '-1 hour') THEN 'connected' ELSE 'offline' END as connectivity_status
+    FROM vehicles;
+-- 8. SEED DATA
+-- Default Admin: admin@kemet.com / admin123
+INSERT OR IGNORE INTO users (email, password_hash, first_name, last_name, account_status, role) VALUES 
+('admin@kemet.com', '$2b$10$gkQWPsEU8cYWUxdtuyC9PedDwWQEK9gR4c9MQHNxXz496bMD23k6.', 'Admin', 'Kemet', 'ACTIVE', 'admin');
+-- Default Features
+INSERT OR IGNORE INTO features (feature_id, name, description, price_amount, payment_type, billing_interval) VALUES 
+('premium-connect', 'Connectivité Premium', 'Accès streaming, cartes satellite et navigation en temps réel', 2500, 'subscription', 'monthly'),
+('acceleration-boost', 'Acceleration Boost', 'Réduction du 0-100 km/h de 4.4s à 3.9s', 1500000, 'one-time', NULL),
+('sentry-mode', 'Mode Sentinelle', 'Sécurité active avec enregistrement vidéo 360°', 5000, 'subscription', 'monthly'),
+('cold-weather-pack', 'Pack Hiver', 'Sièges et volant chauffants toutes places', 250000, 'one-time', NULL);
+-- 9. FOTA TABLES
+CREATE TABLE IF NOT EXISTS fota_campaigns (
+    campaign_id TEXT PRIMARY KEY,
+    campaign_name TEXT NOT NULL,
+    version TEXT NOT NULL,
+    description TEXT,
+    release_notes TEXT,
+    campaign_type TEXT DEFAULT 'SCHEDULED',
+    priority INTEGER DEFAULT 3,
+    rollout_strategy TEXT DEFAULT 'PHASED',
+    scheduled_start DATETIME,
+    status TEXT DEFAULT 'available',
+    size_mb INTEGER,
+    is_critical BOOLEAN DEFAULT 0,
+    created_by INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS vehicle_updates (
+    update_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    vehicle_vin TEXT REFERENCES vehicles(vin) ON DELETE CASCADE,
+    campaign_id TEXT REFERENCES fota_campaigns(campaign_id),
+    status TEXT DEFAULT 'available', -- 'available', 'downloading', 'installing', 'completed', 'failed'
+    progress INTEGER DEFAULT 0,
+    installed_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+-- Seed FOTA
+INSERT OR IGNORE INTO fota_campaigns (campaign_id, campaign_name, version, description, release_notes, size_mb, is_critical, status) VALUES 
+('v1.1.0-release', 'Version 1.1.0', '1.1.0', 'Mise à jour de performance', 'Amélioration de la gestion batterie et nouvelles icônes.', 450, 0, 'COMPLETED');
+-- Service & Support Requests
+CREATE TABLE IF NOT EXISTS service_requests (
+    request_id TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    type TEXT NOT NULL, -- 'SUPPORT', 'SERVICE', 'FEATURE', 'BUG'
+    subject TEXT NOT NULL,
+    description TEXT NOT NULL,
+    status TEXT DEFAULT 'OPEN', -- 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'
+    priority TEXT DEFAULT 'MEDIUM', -- 'LOW', 'MEDIUM', 'HIGH', 'URGENT'
+    admin_notes TEXT,
+    ai_analysis TEXT, -- Stores AI proposed solutions for developers
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+-- Seed some initial requests for demo
+INSERT OR IGNORE INTO service_requests (request_id, user_id, type, subject, description, status, priority, ai_analysis)
+VALUES 
+('req1', 1, 'BUG', 'Problème de charge', 'Ma voiture ne dépasse pas les 80% de charge sur les bornes rapides.', 'OPEN', 'HIGH', '{"solution": "Vérifier les limites de charge logicielle et l''état de santé des cellules (SOH). Une mise à jour du BMS pourrait être nécessaire."}'),
+('req2', 1, 'FEATURE', 'Mode Sommeil', 'Serait-il possible d''ajouter un mode pour dormir dans la voiture avec la clim ?', 'IN_PROGRESS', 'MEDIUM', '{"solution": "Implémenter une boucle de contrôle thermique à faible bruit et désactiver les capteurs de mouvement internes pendant l''activation."}');
+✅ SQLite Database initialized successfully
+🔐 JWT Secret initialized: kemet...
+🤖 Kemet AI Service initialized | Provider: groq | Model: llama-3.3-70b-versatile | Key: gsk_7DztGB...
+node:events:497
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5001
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at Server.listen (node:net:2102:7)
+    at Function.listen (/home/promis/new_softride/SoftRide/node_modules/express/lib/application.js:635:24)
+    at Object.<anonymous> (/home/promis/new_softride/SoftRide/backend/src/server.js:58:5)
+    at Module._compile (node:internal/modules/cjs/loader:1706:14)
+    at Object..js (node:internal/modules/cjs/loader:1839:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1976:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 5001
+}
+
+Node.js v22.20.0
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
