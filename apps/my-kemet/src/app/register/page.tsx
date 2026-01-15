@@ -21,18 +21,21 @@ export default function RegisterPage() {
         setError('');
 
         try {
-            // 1. Check if VIM exists and is not sold
-            const { data: vehicle, error: vError } = await supabase
-                .from('vehicles')
-                .select('*')
-                .eq('vim', vim)
-                .single();
+            // 1. Check if VIM exists and is not sold (Secure RPC)
+            const { data: status, error: rpcError } = await supabase
+                .rpc('check_vim_availability', { input_vim: vim });
 
-            if (vError || !vehicle) {
+            if (rpcError) {
+                console.error("RPC Error:", rpcError);
+                // Fallback for better UX if function missing, though likely to fail RLS too
+                throw new Error("Erreur lors de la vérification du véhicule. Contactez le support.");
+            }
+
+            if (!status || !status.exists) {
                 throw new Error("Ce VIM n'existe pas dans notre base de données.");
             }
 
-            if (vehicle.is_sold) {
+            if (status.is_sold) {
                 throw new Error("Ce véhicule est déjà associé à un autre compte.");
             }
 

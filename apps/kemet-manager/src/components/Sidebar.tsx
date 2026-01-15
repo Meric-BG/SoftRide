@@ -85,7 +85,7 @@ const Sidebar = () => {
                 <NavLink href="/updates" icon={<UploadCloud size={18} />} label="Mises à jour" />
                 <NavLink href="/store" icon={<ShoppingBag size={18} />} label="Kemet Store" />
                 <NavLink href="/requests" icon={<Headphones size={18} />} label="Requêtes Support" />
-                <NavLink href="/testing-sda" icon={<Terminal size={18} />} label="Testing SDA" />
+                <NavLink href="/testing-sdv" icon={<Terminal size={18} />} label="Testing SDV" />
                 <NavLink href="/maintenance" icon={<Wrench size={18} />} label="Maintenance" />
             </nav>
 

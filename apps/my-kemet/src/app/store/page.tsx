@@ -114,12 +114,16 @@ export default function Store() {
 
     const filteredProducts = useMemo(() => {
         return products.filter(p => {
+            // Check if already purchased
+            const isPurchased = purchasedFeatures.some(pf => pf.feature_id === p.id && (!pf.expires_at || new Date(pf.expires_at) > new Date()));
+            if (isPurchased) return false; // Hide purchased items
+
             const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 p.description.toLowerCase().includes(searchQuery.toLowerCase());
             const matchesCategory = activeCategory === 'Tous' || p.category === activeCategory;
             return matchesSearch && matchesCategory;
         });
-    }, [products, searchQuery, activeCategory]);
+    }, [products, searchQuery, activeCategory, purchasedFeatures]);
 
     const handleSelectFrequency = (freq: 'monthly' | 'annual') => {
         setFrequency(freq);
@@ -190,11 +194,13 @@ export default function Store() {
                 provider: 'FEDAPAY'
             });
 
-            // Close purchase modal and show success modal
+            // Refresh state immediately
+            await fetchPurchasedFeatures();
+
+            // UI Updates
             handleCloseModal();
-            fetchPurchasedFeatures();
-            alert('Backend mis à jour. Affichage modal succès.'); // DEBUG
             setShowSuccessModal(true);
+
         } catch (err: any) {
             console.error('Erreur activation:', err);
             alert('Erreur activation: ' + err.message);
@@ -231,28 +237,44 @@ export default function Store() {
                 },
                 on_complete: (data: any) => {
                     console.log('FedaPay result:', data);
-                    alert('Callback FedaPay reçu : ' + data.reason); // DEBUG
-                    if (data.reason === 'CHECKOUT_COMPLETE') {
-                        // Payment success, activate feature
-                        alert('Paiement validé par FedaPay. Activation en cours...'); // DEBUG
+
+                    // Robust check for sandbox or production success
+                    if (data.reason === 'CHECKOUT_COMPLETE' || data.status === 'approved' || (data.setting === 'r' && data.value === true)) {
                         processBackendPurchase(selectedProduct, price);
                     } else {
-                        console.log('Paiement non complété ou annulé');
-                        alert('Paiement non complété : ' + data.reason); // DEBUG
+                        console.log('Paiement non complété', data);
+                        alert('Paiement non complété. Statut: ' + (data.reason || 'Annulé'));
                     }
                 }
             });
             widget.open();
         } catch (error: any) {
             console.error("Erreur FedaPay:", error);
-            alert("Erreur lors de l'initialisation du paiement: " + error.message);
+            alert("Erreur init: " + error.message);
         }
     };
+
+    // Check for FedaPay availability periodically
+    useEffect(() => {
+        if (typeof window !== 'undefined' && window.FedaPay) {
+            setFedaPayLoaded(true);
+        }
+
+        const interval = setInterval(() => {
+            if (typeof window !== 'undefined' && window.FedaPay) {
+                setFedaPayLoaded(true);
+                clearInterval(interval);
+            }
+        }, 1000); // Check every second
+
+        return () => clearInterval(interval);
+    }, []);
 
     return (
         <div className={styles.container}>
             <Script
                 src="https://checkout.fedapay.com/js/checkout.js"
+                strategy="lazyOnload"
                 onLoad={() => setFedaPayLoaded(true)}
             />
 
@@ -393,12 +415,25 @@ export default function Store() {
                                 </div>
                             ) : (
                                 <div className={styles.paymentMethods}>
-                                    <div className={styles.paymentOption} onClick={handlePurchase}>
+                                    <div
+                                        className={styles.paymentOption}
+                                        onClick={() => {
+                                            if (!fedaPayLoaded) return;
+                                            handlePurchase();
+                                        }}
+                                        style={{ opacity: fedaPayLoaded ? 1 : 0.6, cursor: fedaPayLoaded ? 'pointer' : 'not-allowed' }}
+                                    >
                                         <div>
-                                            <div style={{ fontWeight: 600 }}>Paiement Intégral (FedaPay)</div>
+                                            <div style={{ fontWeight: 600 }}>
+                                                {fedaPayLoaded ? 'Paiement Intégral (FedaPay)' : 'Chargement du module...'}
+                                            </div>
                                             <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Réglez {getPrice().toLocaleString('fr-FR')} FCFA maintenant</div>
                                         </div>
-                                        <ArrowRight size={18} color="var(--accent-primary)" />
+                                        {fedaPayLoaded ? (
+                                            <ArrowRight size={18} color="var(--accent-primary)" />
+                                        ) : (
+                                            <div className="animate-spin" style={{ width: '18px', height: '18px', border: '2px solid var(--accent-primary)', borderTopColor: 'transparent', borderRadius: '50%' }}></div>
+                                        )}
                                     </div>
 
                                     {selectedProduct.allow_installments && (
