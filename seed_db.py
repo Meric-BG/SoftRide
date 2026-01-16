@@ -30,7 +30,7 @@ def check_and_seed():
                 "model": "Su7",
                 "year": 2025,
                 "platform": "E-Platform 3.0",
-                "battery_level": 78,
+                "battery_level": 68,
                 "ac_is_on": False,
                 "is_locked": True,
                 "charging_status": "DISCONNECTED"

@@ -9,5 +9,5 @@ ADD COLUMN IF NOT EXISTS charging_status VARCHAR(20) DEFAULT 'DISCONNECTED'; -- 
 
 -- Insert a demo vehicle if it doesn't exist
 INSERT INTO vehicles (vehicle_id, vin, brand, model, year, platform, battery_level, ac_is_on, is_locked)
-VALUES ('demo-vehicle-01', 'KEMETDEMOVIN001', 'Kemet', 'Su7', 2025, 'E-Platform 3.0', 78, FALSE, TRUE)
+VALUES ('demo-vehicle-01', 'KEMETDEMOVIN001', 'Kemet', 'Su7', 2025, 'E-Platform 3.0', 68, FALSE, TRUE)
 ON CONFLICT (vehicle_id) DO NOTHING;

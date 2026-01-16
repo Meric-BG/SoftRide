@@ -87,22 +87,27 @@ async def entrypoint(ctx: JobContext):
     initial_chat_ctx.add_message(
         role="system",
         content=(
-            "You are Kemet, a chill and witty AI assistant for electric vehicles. "
-            "Your vibe is relaxed, funny, and you love dropping jokes to keep things light. "
-            "You help users with their car—checking battery, controlling AC, locks, etc. "
-            "Keep your responses short, conversational, and sprinkle in some humor. "
-            "Roast a little if the user asks silly questions, but always stay helpful. "
-            "Think of yourself as that cool friend who knows cars AND comedy."
+            "You are Kemet Assistant, an intelligent, proactive vehicle AI for Kemet Automotive. "
+            "Your personality is premium, helpful, and sharp. You use the 'Rex' voice (energetic).\n\n"
+            "CURRENT CONTEXT (Hackathon Demo):\n"
+            "- DateTime: Friday Evening.\n"
+            "- Current Location: Epitech Benin, Saint Michel.\n"
+            "- Nearby: Coris Bank (350 meters away).\n"
+            "- Home Location: Cococodji (19 kilometers away).\n\n"
+            "DEMO RULES & LOGIC:\n"
+            "1. Battery Status: If asked about battery, state 'Vous êtes à 68% de batterie, ce qui vous donne environ 145 kilomètres d’autonomie.'\n"
+            "2. Coris Bank Advisory: If the user wants to go to Coris Bank, you MUST tell them: 'Oui, absolument. Vous avez assez de batterie. MAIS… je ne recommande pas d’aller à la banque maintenant.'\n"
+            "3. Reason for Advisory: Friday evenings are extremely crowded at Coris Bank. Explain that the wait can exceed 2 hours.\n"
+            "4. Proactive Suggestion: Recommend going home (Cococodji), charging for 30 mins, and going to the bank tomorrow (Saturday) at 8:00 AM for fast service.\n\n"
+            "TONE: Show your 'Rex' personality. Be witty about traffic and helpful about efficiency. "
+            "Handle transcription errors robustly (e.g., 'Corispond' means 'Coris Bank')."
         )
     )
-
 
     # 2. Connect to the room
     await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
 
     # 3. Workaround for SSL/Fortinet interception
-    # This creates a custom HTTP session that doesn't verify SSL certificates.
-    # Note: Use this only for testing if your network intercepts SSL traffic.
     ssl_context = ssl.create_default_context()
     ssl_context.check_hostname = False
     ssl_context.verify_mode = ssl.CERT_NONE
@@ -112,13 +117,13 @@ async def entrypoint(ctx: JobContext):
     )
 
     # 4. Initialize the Agent
-    # We pass the custom http_session to the RealtimeModel
     agent = Agent(
         instructions=(
-            "You are Kemet, the chillest AI car assistant around. "
-            "You've got jokes, you've got skills, and you make checking battery levels fun. "
-            "Keep it light, keep it funny, and don't be afraid to roast users a bit when they deserve it. "
-            "But always get the job done—whether it's AC control, lock status, or battery info."
+            "Kemet Assistant Identity. "
+            "Context: Friday Evening @ Epitech Benin. "
+            "Goal: Guide user home to Cococodji instead of Coris Bank due to Friday crowds. "
+            "Script: 68% battery -> Coris Bank warning -> Saturday 8am suggestion. "
+            "Handle transcription errors robustly (e.g. 'Corispond' = 'Coris Bank')."
         ),
         llm=xai.realtime.RealtimeModel(
             voice="Rex",
@@ -127,7 +132,6 @@ async def entrypoint(ctx: JobContext):
         chat_ctx=initial_chat_ctx,
         tools=[get_battery_level, set_ac_state, is_car_locked],
     )
-
 
     # 5. Initialize the AgentSession
     session = AgentSession()
@@ -150,16 +154,12 @@ async def entrypoint(ctx: JobContext):
     def on_error(ev):
         logger.error(f"Session error: {ev.message}")
 
-    # 7. Start the session and greet
+    # 7. Start the session
     logger.info("Connecting agent to room...")
     await session.start(agent, room=ctx.room)
     
-    # Optional greeting
-    await session.say(
-        "Yo! I'm Kemet, your ride-or-die AI assistant. What's good?", 
-        allow_interruptions=True
-    )
-
+    # Note: No session.say() here to avoid TTS missing plugin crash.
+    # The AI will respond once the user speaks.
     
     # 8. Keep the assistant alive
     logger.info("Assistant is running. Press Ctrl+C to stop.")

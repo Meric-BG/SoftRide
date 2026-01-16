@@ -1,0 +1,8 @@
+# LiveKit Agent Configuration
+# For more info: https://docs.livekit.io/agents/ops/deployment/config/
+
+alias = "kemet-assistant"
+
+[agent]
+entrypoint = "assitant.py"
+language = "python"
